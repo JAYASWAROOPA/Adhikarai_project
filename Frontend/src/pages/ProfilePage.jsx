@@ -30,27 +30,29 @@ import {
   TableCell,
   Paper,
   Alert,
-  Stack
+  Stack,
+  Slider,
+  Chip
 } from '@mui/material';
 import { useAuthStore } from '../store/useAuthStore';
-import { fetchMockProfile } from '../services/api';
+import { contentService } from '../services/api';
+import { profileFields } from '../config/profileFields';
 
-// Zod validation schemas for each step
 const step1Schema = z.object({
   fullName: z.string().min(3, 'Full name must be at least 3 characters'),
   dateOfBirth: z.string().min(1, 'Date of Birth is required'),
   gender: z.enum(['Male', 'Female', 'Other']),
   maritalStatus: z.string().min(1, 'Marital status is required'),
   nationality: z.string().min(2, 'Nationality is required'),
-  aadhaarNumber: z.string().regex(/^\d{12}$/, 'Aadhaar must be exactly 12 digits')
+  aadharNumber: z.string().min(10, 'Aadhaar / ID number is required')
 });
 
 const step2Schema = z.object({
   email: z.string().email('Invalid email address'),
-  phone: z.string().regex(/^\d{10}$/, 'Phone must be exactly 10 digits'),
+  phoneNumber: z.string().min(10, 'Phone must be at least 10 digits'),
   state: z.string().min(1, 'State is required'),
   district: z.string().min(1, 'District is required'),
-  pincode: z.string().regex(/^\d{6}$/, 'Pincode must be exactly 6 digits'),
+  pincode: z.string().min(6, 'Pincode must be 6 digits'),
   address: z.string().min(5, 'Address must be at least 5 characters')
 });
 
@@ -61,26 +63,10 @@ const step3Schema = z.object({
   familyMembers: z.coerce.number().min(1, 'Must have at least 1 family member'),
   bplCardStatus: z.boolean(),
   casteCategory: z.string().min(1, 'Caste category is required'),
-  religion: z.string().optional(),
   educationLevel: z.string().min(1, 'Education level is required')
 });
 
-const step4Schema = z.object({
-  isDisabled: z.boolean(),
-  disabilityType: z.string().optional(),
-  hasBankAccount: z.boolean(),
-  bankName: z.string().optional(),
-  accountNumber: z.string().optional(),
-  ifscCode: z.string().optional()
-}).refine(data => !data.isDisabled || (data.isDisabled && data.disabilityType), {
-  message: 'Disability type is required if disabled',
-  path: ['disabilityType']
-}).refine(data => !data.hasBankAccount || (data.hasBankAccount && data.bankName && data.accountNumber && data.ifscCode), {
-  message: 'Bank details are required if you have an account',
-  path: ['bankName']
-});
-
-const steps = ['Personal Info', 'Contact & Location', 'Economic Status', 'Additional Info', 'Review & Submit'];
+const steps = ['Personal Info', 'Contact & Location', 'Economic Status', 'Review & Submit'];
 
 const ProfilePage = () => {
   const user = useAuthStore((state) => state.user);
@@ -88,13 +74,11 @@ const ProfilePage = () => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [calculatedAge, setCalculatedAge] = useState(null);
 
-  // Zod schema based on current active step
   const getStepSchema = (step) => {
     switch (step) {
       case 0: return step1Schema;
       case 1: return step2Schema;
       case 2: return step3Schema;
-      case 3: return step4Schema;
       default: return z.object({});
     }
   };
@@ -106,62 +90,46 @@ const ProfilePage = () => {
       fullName: '',
       dateOfBirth: '',
       gender: 'Male',
-      maritalStatus: '',
+      maritalStatus: 'Single',
       nationality: 'Indian',
-      aadhaarNumber: '',
+      aadharNumber: '',
       email: user?.email || '',
-      phone: '',
-      state: '',
-      district: '',
-      pincode: '',
+      phoneNumber: '',
+      state: 'Maharashtra',
+      district: 'Mumbai',
+      pincode: '400001',
       address: '',
-      annualIncome: 0,
-      employmentType: '',
-      occupation: '',
-      familyMembers: 1,
+      annualIncome: 450000,
+      employmentType: 'Salaried',
+      occupation: 'Technician',
+      familyMembers: 4,
       bplCardStatus: false,
-      casteCategory: '',
-      religion: '',
-      educationLevel: '',
-      isDisabled: false,
-      disabilityType: '',
-      hasBankAccount: false,
-      bankName: '',
-      accountNumber: '',
-      ifscCode: ''
+      casteCategory: 'General',
+      educationLevel: 'Graduate'
     }
   });
 
   const { handleSubmit, watch, setValue, formState: { errors } } = methods;
   const formData = watch();
 
-  // Load existing profile if available
   useEffect(() => {
     async function loadProfile() {
       try {
-        const profile = await fetchMockProfile();
+        const profile = await contentService.getProfile();
         if (profile) {
-          setValue('fullName', profile.fullName);
-          setValue('dateOfBirth', profile.dateOfBirth);
-          setValue('gender', profile.gender);
-          setValue('email', profile.email);
-          setValue('phone', profile.phone);
-          setValue('state', profile.state);
-          setValue('district', profile.district);
-          setValue('annualIncome', profile.annualIncome);
-          setValue('employmentType', profile.employmentType);
-          setValue('casteCategory', profile.casteCategory);
-          setValue('educationLevel', profile.educationLevel);
-          setValue('bplCardStatus', profile.bplCardStatus);
+          Object.keys(profile).forEach(key => {
+            if (profile[key] !== undefined) {
+              setValue(key, profile[key]);
+            }
+          });
         }
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching profile data:', err);
       }
     }
     loadProfile();
   }, [setValue]);
 
-  // Handle auto-calculating age
   const dob = watch('dateOfBirth');
   useEffect(() => {
     if (dob) {
@@ -177,9 +145,12 @@ const ProfilePage = () => {
     if (activeStep < steps.length - 1) {
       setActiveStep((prevActiveStep) => prevActiveStep + 1);
     } else {
-      // Step 5: Final Submission
-      console.log('Submitting Data:', data);
-      setSubmitSuccess(true);
+      try {
+        await contentService.updateProfile(data);
+        setSubmitSuccess(true);
+      } catch (err) {
+        console.error('Error updating profile:', err);
+      }
     }
   };
 
@@ -188,21 +159,23 @@ const ProfilePage = () => {
   };
 
   return (
-    <Box sx={{ py: 2 }}>
-      <Typography variant="h4" fontWeight="bold" sx={{ mb: 4 }}>
-        My Profile
+    <Box sx={{ py: 3 }}>
+      <Typography variant="h4" fontWeight="bold" color="primary.main" sx={{ mb: 1 }}>
+        Citizen Profile Questionnaire
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+        Database-driven 15+ datapoints system used for AI scheme matching and auto-filling official application forms.
       </Typography>
 
       {submitSuccess && (
         <Alert severity="success" sx={{ mb: 4 }} onClose={() => setSubmitSuccess(false)}>
-          Profile submitted successfully! Eligibility checks are updating.
+          Profile submitted and synced to database! AI scheme match score is updated.
         </Alert>
       )}
 
       <Grid container spacing={4}>
-        {/* Left Column: Form & Stepper */}
         <Grid item xs={12} md={8}>
-          <Card>
+          <Card sx={{ borderRadius: 4 }}>
             <CardContent sx={{ p: 4 }}>
               <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
                 {steps.map((label) => (
@@ -214,262 +187,176 @@ const ProfilePage = () => {
 
               <FormProvider {...methods}>
                 <form onSubmit={handleSubmit(handleNext)}>
+                  {/* Step 1: Personal Info */}
                   {activeStep === 0 && (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      <Typography variant="h6" fontWeight="bold">Personal Details</Typography>
-                      <TextField
-                        fullWidth
-                        label="Full Name"
-                        {...methods.register('fullName')}
-                        error={!!errors.fullName}
-                        helperText={errors.fullName?.message}
-                      />
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            type="date"
-                            label="Date of Birth"
-                            InputLabelProps={{ shrink: true }}
-                            {...methods.register('dateOfBirth')}
-                            error={!!errors.dateOfBirth}
-                            helperText={errors.dateOfBirth?.message}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                            Calculated Age: {calculatedAge !== null ? calculatedAge : 'N/A'} years old
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                      <FormControl error={!!errors.gender}>
-                        <FormLabel>Gender</FormLabel>
-                        <RadioGroup row {...methods.register('gender')}>
-                          <FormControlLabel value="Male" control={<Radio />} label="Male" />
-                          <FormControlLabel value="Female" control={<Radio />} label="Female" />
-                          <FormControlLabel value="Other" control={<Radio />} label="Other" />
-                        </RadioGroup>
-                      </FormControl>
-                      <FormControl fullWidth error={!!errors.maritalStatus}>
-                        <InputLabel>Marital Status</InputLabel>
-                        <Select label="Marital Status" {...methods.register('maritalStatus')} defaultValue="">
-                          <MenuItem value="Single">Single</MenuItem>
-                          <MenuItem value="Married">Married</MenuItem>
-                          <MenuItem value="Widowed">Widowed</MenuItem>
-                          <MenuItem value="Divorced">Divorced</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <TextField
-                        fullWidth
-                        label="Nationality"
-                        {...methods.register('nationality')}
-                        error={!!errors.nationality}
-                        helperText={errors.nationality?.message}
-                      />
-                      <TextField
-                        fullWidth
-                        label="Aadhaar Number (12 digits)"
-                        {...methods.register('aadhaarNumber')}
-                        error={!!errors.aadhaarNumber}
-                        helperText={errors.aadhaarNumber?.message}
-                      />
+                      <Typography variant="h6" fontWeight="bold" color="primary.main">Personal Details</Typography>
+                      {profileFields.personal.map((field) => {
+                        if (field.type === 'text' || field.type === 'date') {
+                          return (
+                            <TextField
+                              key={field.name}
+                              fullWidth
+                              type={field.type}
+                              label={field.label}
+                              InputLabelProps={field.type === 'date' ? { shrink: true } : undefined}
+                              {...methods.register(field.name)}
+                              error={!!errors[field.name]}
+                              helperText={errors[field.name]?.message || (field.name === 'dateOfBirth' && calculatedAge !== null ? `Calculated Age: ${calculatedAge} yrs` : '')}
+                            />
+                          );
+                        }
+                        if (field.type === 'radio') {
+                          return (
+                            <FormControl key={field.name} error={!!errors[field.name]}>
+                              <FormLabel>{field.label}</FormLabel>
+                              <RadioGroup row {...methods.register(field.name)}>
+                                {field.options.map(opt => (
+                                  <FormControlLabel key={opt} value={opt} control={<Radio color="secondary" />} label={opt} />
+                                ))}
+                              </RadioGroup>
+                            </FormControl>
+                          );
+                        }
+                        if (field.type === 'select') {
+                          return (
+                            <FormControl key={field.name} fullWidth error={!!errors[field.name]}>
+                              <InputLabel>{field.label}</InputLabel>
+                              <Select label={field.label} {...methods.register(field.name)} defaultValue={watch(field.name) || ""}>
+                                {field.options.map(opt => (
+                                  <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          );
+                        }
+                        return null;
+                      })}
                     </Box>
                   )}
 
+                  {/* Step 2: Contact Details */}
                   {activeStep === 1 && (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      <Typography variant="h6" fontWeight="bold">Contact & Location</Typography>
-                      <TextField
-                        fullWidth
-                        label="Email Address"
-                        {...methods.register('email')}
-                        error={!!errors.email}
-                        helperText={errors.email?.message}
-                      />
-                      <TextField
-                        fullWidth
-                        label="Phone Number (10 digits)"
-                        {...methods.register('phone')}
-                        error={!!errors.phone}
-                        helperText={errors.phone?.message}
-                      />
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <FormControl fullWidth error={!!errors.state}>
-                            <InputLabel>State</InputLabel>
-                            <Select label="State" {...methods.register('state')} defaultValue="">
-                              <MenuItem value="Maharashtra">Maharashtra</MenuItem>
-                              <MenuItem value="Tamil Nadu">Tamil Nadu</MenuItem>
-                              <MenuItem value="Delhi">Delhi</MenuItem>
-                              <MenuItem value="Karnataka">Karnataka</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <FormControl fullWidth error={!!errors.district}>
-                            <InputLabel>District</InputLabel>
-                            <Select label="District" {...methods.register('district')} defaultValue="">
-                              <MenuItem value="Mumbai">Mumbai</MenuItem>
-                              <MenuItem value="Pune">Pune</MenuItem>
-                              <MenuItem value="Chennai">Chennai</MenuItem>
-                              <MenuItem value="Bengaluru">Bengaluru</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </Grid>
-                      </Grid>
-                      <TextField
-                        fullWidth
-                        label="Pincode (6 digits)"
-                        {...methods.register('pincode')}
-                        error={!!errors.pincode}
-                        helperText={errors.pincode?.message}
-                      />
-                      <TextField
-                        fullWidth
-                        label="Residential Address"
-                        multiline
-                        rows={3}
-                        {...methods.register('address')}
-                        error={!!errors.address}
-                        helperText={errors.address?.message}
-                      />
+                      <Typography variant="h6" fontWeight="bold" color="primary.main">Contact & Location Information</Typography>
+                      {profileFields.contact.map((field) => {
+                        if (field.type === 'email' || field.type === 'tel' || field.type === 'text') {
+                          return (
+                            <TextField
+                              key={field.name}
+                              fullWidth
+                              disabled={field.disabled}
+                              label={field.label}
+                              {...methods.register(field.name)}
+                              error={!!errors[field.name]}
+                              helperText={errors[field.name]?.message}
+                            />
+                          );
+                        }
+                        if (field.type === 'textarea') {
+                          return (
+                            <TextField
+                              key={field.name}
+                              fullWidth
+                              multiline
+                              rows={3}
+                              label={field.label}
+                              {...methods.register(field.name)}
+                              error={!!errors[field.name]}
+                              helperText={errors[field.name]?.message}
+                            />
+                          );
+                        }
+                        if (field.type === 'select') {
+                          const opts = Array.isArray(field.options) ? field.options : ["Maharashtra", "Tamil Nadu", "Delhi", "Gujarat", "Karnataka", "Other"];
+                          return (
+                            <FormControl key={field.name} fullWidth error={!!errors[field.name]}>
+                              <InputLabel>{field.label}</InputLabel>
+                              <Select label={field.label} {...methods.register(field.name)} defaultValue={watch(field.name) || ""}>
+                                {opts.map(opt => (
+                                  <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          );
+                        }
+                        return null;
+                      })}
                     </Box>
                   )}
 
+                  {/* Step 3: Economic Status */}
                   {activeStep === 2 && (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      <Typography variant="h6" fontWeight="bold">Economic Status</Typography>
-                      <TextField
-                        fullWidth
-                        type="number"
-                        label="Annual Family Income (₹)"
-                        {...methods.register('annualIncome')}
-                        error={!!errors.annualIncome}
-                        helperText={errors.annualIncome?.message}
-                      />
-                      <FormControl fullWidth error={!!errors.employmentType}>
-                        <InputLabel>Employment Type</InputLabel>
-                        <Select label="Employment Type" {...methods.register('employmentType')} defaultValue="">
-                          <MenuItem value="Salaried">Salaried</MenuItem>
-                          <MenuItem value="Self-Employed">Self-Employed</MenuItem>
-                          <MenuItem value="Unemployed">Unemployed</MenuItem>
-                          <MenuItem value="Student">Student</MenuItem>
-                          <MenuItem value="Retired">Retired</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <TextField
-                        fullWidth
-                        label="Occupation"
-                        {...methods.register('occupation')}
-                        error={!!errors.occupation}
-                        helperText={errors.occupation?.message}
-                      />
-                      <TextField
-                        fullWidth
-                        type="number"
-                        label="Family Members Count"
-                        {...methods.register('familyMembers')}
-                        error={!!errors.familyMembers}
-                        helperText={errors.familyMembers?.message}
-                      />
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography>BPL Card Holder?</Typography>
-                        <Switch
-                          checked={watch('bplCardStatus')}
-                          onChange={(e) => setValue('bplCardStatus', e.target.checked)}
-                        />
-                      </Box>
-                      <FormControl fullWidth error={!!errors.casteCategory}>
-                        <InputLabel>Caste Category</InputLabel>
-                        <Select label="Caste Category" {...methods.register('casteCategory')} defaultValue="">
-                          <MenuItem value="General">General</MenuItem>
-                          <MenuItem value="OBC">OBC</MenuItem>
-                          <MenuItem value="SC">SC</MenuItem>
-                          <MenuItem value="ST">ST</MenuItem>
-                          <MenuItem value="EWS">EWS</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <TextField
-                        fullWidth
-                        label="Religion (Optional)"
-                        {...methods.register('religion')}
-                      />
-                      <FormControl fullWidth error={!!errors.educationLevel}>
-                        <InputLabel>Education Level</InputLabel>
-                        <Select label="Education Level" {...methods.register('educationLevel')} defaultValue="">
-                          <MenuItem value="Illiterate">Illiterate</MenuItem>
-                          <MenuItem value="Primary">Primary (Up to Class 5)</MenuItem>
-                          <MenuItem value="Secondary">Secondary (Class 10)</MenuItem>
-                          <MenuItem value="Senior Secondary">Senior Secondary (Class 12)</MenuItem>
-                          <MenuItem value="Graduate">Graduate</MenuItem>
-                          <MenuItem value="Postgraduate">Postgraduate</MenuItem>
-                        </Select>
-                      </FormControl>
+                      <Typography variant="h6" fontWeight="bold" color="primary.main">Economic & Socio Demographic Details</Typography>
+                      {profileFields.economic.map((field) => {
+                        if (field.type === 'range') {
+                          return (
+                            <Box key={field.name}>
+                              <Typography variant="subtitle2" gutterBottom>
+                                {field.label}: <strong>₹{Number(watch(field.name) || 0).toLocaleString()}</strong>
+                              </Typography>
+                              <Slider
+                                value={Number(watch(field.name) || 0)}
+                                onChange={(_, val) => setValue(field.name, val)}
+                                min={field.min}
+                                max={field.max}
+                                step={field.step}
+                                valueLabelDisplay="auto"
+                                color="secondary"
+                              />
+                            </Box>
+                          );
+                        }
+                        if (field.type === 'number' || field.type === 'text') {
+                          return (
+                            <TextField
+                              key={field.name}
+                              fullWidth
+                              type={field.type}
+                              label={field.label}
+                              {...methods.register(field.name)}
+                              error={!!errors[field.name]}
+                              helperText={errors[field.name]?.message}
+                            />
+                          );
+                        }
+                        if (field.type === 'boolean') {
+                          return (
+                            <Box key={field.name} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                              <Typography fontWeight="500">{field.label}</Typography>
+                              <Switch
+                                checked={!!watch(field.name)}
+                                onChange={(e) => setValue(field.name, e.target.checked)}
+                                color="secondary"
+                              />
+                            </Box>
+                          );
+                        }
+                        if (field.type === 'select') {
+                          return (
+                            <FormControl key={field.name} fullWidth error={!!errors[field.name]}>
+                              <InputLabel>{field.label}</InputLabel>
+                              <Select label={field.label} {...methods.register(field.name)} defaultValue={watch(field.name) || ""}>
+                                {field.options.map(opt => (
+                                  <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          );
+                        }
+                        return null;
+                      })}
                     </Box>
                   )}
 
+                  {/* Step 4: Review */}
                   {activeStep === 3 && (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      <Typography variant="h6" fontWeight="bold">Additional Information</Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography>Person with Disability?</Typography>
-                        <Switch
-                          checked={watch('isDisabled')}
-                          onChange={(e) => setValue('isDisabled', e.target.checked)}
-                        />
-                      </Box>
-                      {watch('isDisabled') && (
-                        <TextField
-                          fullWidth
-                          label="Type of Disability"
-                          {...methods.register('disabilityType')}
-                          error={!!errors.disabilityType}
-                          helperText={errors.disabilityType?.message}
-                        />
-                      )}
-
-                      <Divider />
-
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography>Do you have a Bank Account?</Typography>
-                        <Switch
-                          checked={watch('hasBankAccount')}
-                          onChange={(e) => setValue('hasBankAccount', e.target.checked)}
-                        />
-                      </Box>
-
-                      {watch('hasBankAccount') && (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          <TextField
-                            fullWidth
-                            label="Bank Name"
-                            {...methods.register('bankName')}
-                            error={!!errors.bankName}
-                            helperText={errors.bankName?.message}
-                          />
-                          <TextField
-                            fullWidth
-                            label="Account Number"
-                            {...methods.register('accountNumber')}
-                            error={!!errors.accountNumber}
-                            helperText={errors.accountNumber?.message}
-                          />
-                          <TextField
-                            fullWidth
-                            label="IFSC Code"
-                            {...methods.register('ifscCode')}
-                            error={!!errors.ifscCode}
-                            helperText={errors.ifscCode?.message}
-                          />
-                        </Box>
-                      )}
-                    </Box>
-                  )}
-
-                  {activeStep === 4 && (
                     <Box>
-                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Review your Information</Typography>
-                      <TableContainer component={Paper} elevation={0} variant="outlined">
+                      <Typography variant="h6" fontWeight="bold" color="primary.main" sx={{ mb: 2 }}>
+                        Review Your Submitted Information
+                      </Typography>
+                      <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: 3 }}>
                         <Table size="small">
                           <TableBody>
                             <TableRow>
@@ -478,27 +365,27 @@ const ProfilePage = () => {
                             </TableRow>
                             <TableRow>
                               <TableCell fontWeight="bold">Date of Birth</TableCell>
-                              <TableCell>{formData.dateOfBirth} ({calculatedAge} years old)</TableCell>
+                              <TableCell>{formData.dateOfBirth} ({calculatedAge || 0} years)</TableCell>
                             </TableRow>
                             <TableRow>
-                              <TableCell fontWeight="bold">Gender</TableCell>
-                              <TableCell>{formData.gender}</TableCell>
+                              <TableCell fontWeight="bold">Gender / Marital</TableCell>
+                              <TableCell>{formData.gender} / {formData.maritalStatus}</TableCell>
                             </TableRow>
                             <TableRow>
-                              <TableCell fontWeight="bold">Aadhaar Number</TableCell>
-                              <TableCell>{formData.aadhaarNumber}</TableCell>
+                              <TableCell fontWeight="bold">Aadhaar / Contact</TableCell>
+                              <TableCell>{formData.aadharNumber} • {formData.phoneNumber}</TableCell>
                             </TableRow>
                             <TableRow>
-                              <TableCell fontWeight="bold">Location</TableCell>
+                              <TableCell fontWeight="bold">State & District</TableCell>
                               <TableCell>{formData.district}, {formData.state}</TableCell>
                             </TableRow>
                             <TableRow>
                               <TableCell fontWeight="bold">Annual Income</TableCell>
-                              <TableCell>₹{formData.annualIncome}</TableCell>
+                              <TableCell>₹{Number(formData.annualIncome).toLocaleString()}</TableCell>
                             </TableRow>
                             <TableRow>
-                              <TableCell fontWeight="bold">Caste Category</TableCell>
-                              <TableCell>{formData.casteCategory}</TableCell>
+                              <TableCell fontWeight="bold">Employment & Caste</TableCell>
+                              <TableCell>{formData.employmentType} ({formData.casteCategory})</TableCell>
                             </TableRow>
                             <TableRow>
                               <TableCell fontWeight="bold">BPL Card Status</TableCell>
@@ -511,23 +398,12 @@ const ProfilePage = () => {
                   )}
 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-                    <Button
-                      disabled={activeStep === 0}
-                      onClick={handleBack}
-                      variant="outlined"
-                    >
+                    <Button disabled={activeStep === 0} onClick={handleBack} variant="outlined">
                       Back
                     </Button>
                     <Stack direction="row" spacing={2}>
-                      <Button variant="outlined" color="inherit">
-                        Save Draft
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        type="submit"
-                      >
-                        {activeStep === steps.length - 1 ? 'Submit Profile' : 'Next'}
+                      <Button variant="contained" color="secondary" type="submit">
+                        {activeStep === steps.length - 1 ? 'Save & Sync Profile' : 'Next Step'}
                       </Button>
                     </Stack>
                   </Box>
@@ -537,13 +413,14 @@ const ProfilePage = () => {
           </Card>
         </Grid>
 
-        {/* Right Column: Real-time Profile Summary Card */}
+        {/* Right Summary Sidebar */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ position: 'sticky', top: 80 }}>
+          <Card sx={{ position: 'sticky', top: 90, borderRadius: 4 }}>
             <CardContent>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Profile Summary
+              <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom>
+                Profile Live Snapshot
               </Typography>
+              <Chip label="15+ Datapoints Connected" color="success" size="small" sx={{ mb: 2 }} />
               <Divider sx={{ mb: 2 }} />
 
               <Stack spacing={2}>
@@ -554,24 +431,24 @@ const ProfilePage = () => {
                 <Box>
                   <Typography variant="caption" color="text.secondary">Age / Gender</Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {calculatedAge !== null ? `${calculatedAge} yrs` : 'N/A'} / {formData.gender}
+                    {calculatedAge !== null ? `${calculatedAge} yrs` : 'N/A'} • {formData.gender}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption" color="text.secondary">Income</Typography>
+                  <Typography variant="caption" color="text.secondary">Annual Income</Typography>
                   <Typography variant="body1" fontWeight="bold" color="secondary.main">
-                    ₹{Number(formData.annualIncome).toLocaleString()} / year
+                    ₹{Number(formData.annualIncome || 0).toLocaleString()}
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Location</Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {formData.district || 'District'}, {formData.state || 'State'}
+                    {formData.district}, {formData.state}
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">Caste Category</Typography>
-                  <Typography variant="body1" fontWeight="bold">{formData.casteCategory || 'N/A'}</Typography>
+                  <Typography variant="body1" fontWeight="bold">{formData.casteCategory}</Typography>
                 </Box>
               </Stack>
             </CardContent>

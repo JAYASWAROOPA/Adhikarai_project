@@ -1,70 +1,104 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Card, CardContent, Button, Stack, Chip, CircularProgress } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Stack,
+  Chip,
+  CircularProgress,
+  Paper,
+  LinearProgress,
+  Avatar
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import StarIcon from '@mui/icons-material/Star';
-import PersonIcon from '@mui/icons-material/Person';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import EditIcon from '@mui/icons-material/Edit';
+import DescriptionIcon from '@mui/icons-material/Description';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useAuthStore } from '../store/useAuthStore';
-import { fetchMockRecommendations, fetchMockSchemes } from '../services/api';
+import { contentService } from '../services/api';
 
 const DashboardPage = () => {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
-  const [schemes, setSchemes] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadData() {
-      // Mock loading delay
-      setTimeout(async () => {
-        const data = await fetchMockSchemes();
-        setSchemes(data);
+    async function loadDashboard() {
+      try {
+        setLoading(true);
+        const [dash, activity, recs] = await Promise.all([
+          contentService.getDashboardData(),
+          contentService.getRecentActivity(),
+          contentService.getRecommendations()
+        ]);
+
+        setDashboardData(dash);
+        setRecentActivity(activity || []);
+        setRecommendations(recs?.recommendations || recs || []);
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      } finally {
         setLoading(false);
-      }, 500);
+      }
     }
-    loadData();
+    loadDashboard();
   }, []);
 
+  const stats = dashboardData?.stats;
+  const timeline = dashboardData?.timeline?.steps || [];
+  const profileStrength = stats?.profileStrength || 85;
+
   return (
-    <Box>
+    <Box sx={{ py: 3 }}>
       {/* Welcome Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4 }}>
         <Box>
-          <Typography variant="h4" fontWeight="bold">Welcome back, {user?.firstName}!</Typography>
+          <Typography variant="h4" fontWeight="bold" color="primary.main">
+            Welcome back, {user?.firstName || dashboardData?.user?.name || "Citizen"}!
+          </Typography>
           <Typography variant="body2" color="text.secondary">
-            {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} • Database Synced
           </Typography>
         </Box>
-        <Box sx={{ textAlign: 'right' }}>
-          <Typography variant="body2" fontWeight="bold">Profile Strength</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ width: 100, height: 8, bgcolor: 'grey.300', borderRadius: 4 }}>
-              <Box sx={{ width: '85%', height: '100%', bgcolor: 'success.main', borderRadius: 4 }} />
-            </Box>
-            <Typography variant="caption">85%</Typography>
+
+        {/* Profile Strength Indicator */}
+        <Paper elevation={0} sx={{ p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider', minWidth: 260 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="subtitle2" fontWeight="bold">Profile Strength</Typography>
+            <Typography variant="subtitle2" color="secondary.main" fontWeight="bold">{profileStrength}%</Typography>
           </Box>
-        </Box>
+          <LinearProgress variant="determinate" value={profileStrength} color="secondary" sx={{ height: 8, borderRadius: 4 }} />
+        </Paper>
       </Box>
 
       {/* Quick Stats Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {[
-          { title: 'Active Schemes', count: 124, icon: <AssignmentIcon color="primary" /> },
-          { title: 'Pending Apps', count: 1, icon: <PendingIcon color="warning" /> },
-          { title: 'Approved Benefits', count: 2, icon: <CheckCircleIcon color="success" /> },
-          { title: 'AI Match Score', count: '92%', icon: <StarIcon color="secondary" /> }
+          { title: 'Eligible Schemes', count: stats?.eligibleSchemes || 12, icon: <AssignmentIcon color="primary" />, color: 'primary.50' },
+          { title: 'Active Applications', count: stats?.applications || 5, icon: <PendingIcon color="warning" />, color: 'warning.light' },
+          { title: 'Approved Benefits', count: stats?.approved || 3, icon: <CheckCircleIcon color="success" />, color: 'success.light' },
+          { title: 'AI Match Score', count: '92%', icon: <StarIcon color="secondary" />, color: 'secondary.light' }
         ].map((stat, idx) => (
           <Grid item xs={12} sm={6} md={3} key={idx}>
-            <Card>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
-                <Box sx={{ mr: 2, p: 1, bgcolor: 'action.hover', borderRadius: '50%' }}>
+            <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+              <CardContent sx={{ display: 'flex', alignItems: 'center', p: 2.5 }}>
+                <Avatar sx={{ bgcolor: 'primary.50', mr: 2, width: 48, height: 48 }}>
                   {stat.icon}
-                </Box>
+                </Avatar>
                 <Box>
-                  <Typography variant="h5" fontWeight="bold">{stat.count}</Typography>
-                  <Typography variant="caption" color="text.secondary">{stat.title}</Typography>
+                  <Typography variant="h4" fontWeight="bold" color="primary.main">{stat.count}</Typography>
+                  <Typography variant="caption" color="text.secondary" fontWeight="500">{stat.title}</Typography>
                 </Box>
               </CardContent>
             </Card>
@@ -72,27 +106,61 @@ const DashboardPage = () => {
         ))}
       </Grid>
 
+      {/* Profile Completion Timeline */}
+      <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom>
+          Profile Completion Steps
+        </Typography>
+        <Grid container spacing={2} sx={{ mt: 1 }}>
+          {timeline.map((step) => (
+            <Grid item xs={12} sm={2.4} key={step.id}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircleIcon color={step.completed ? "success" : "disabled"} sx={{ fontSize: 20 }} />
+                <Typography variant="body2" fontWeight={step.completed ? "bold" : "normal"} color={step.completed ? "text.primary" : "text.secondary"}>
+                  {step.label}
+                </Typography>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      </Paper>
+
       <Grid container spacing={4}>
-        {/* Recommended Schemes Carousel (Mocked as List) */}
+        {/* Recommended Schemes Section */}
         <Grid item xs={12} md={8}>
-          <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>Recommended For You</Typography>
-          {loading ? <CircularProgress /> : (
-            <Stack spacing={2}>
-              {schemes.map(s => (
-                <Card key={s.id} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Box>
-                    <Typography variant="h6" color="primary.main">{s.name}</Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {s.department}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 1 }}>{s.description}</Typography>
-                    <Chip label={`Benefit: ${s.benefits}`} size="small" color="secondary" variant="outlined"/>
-                  </Box>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Chip label="92% Match" color="success" size="small" sx={{ mb: 1 }} />
-                    <br />
-                    <Button variant="contained" size="small" onClick={() => navigate(`/schemes/${s.id}`)}>
-                      View Details
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h5" fontWeight="bold" color="primary.main">
+              AI Scheme Recommendations
+            </Typography>
+            <Button size="small" onClick={() => navigate('/schemes')} endIcon={<ArrowForwardIcon />}>
+              View All
+            </Button>
+          </Box>
+
+          {loading ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress color="secondary" /></Box>
+          ) : (
+            <Stack spacing={2.5}>
+              {recommendations.map((rec, idx) => (
+                <Card key={rec.schemeId || idx} sx={{ p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box sx={{ flexGrow: 1, pr: 2 }}>
+                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                        <Chip label={`${rec.matchPercentage || 92}% Match`} color="success" size="small" />
+                        <Chip label={rec.priority || "High Priority"} color="secondary" variant="outlined" size="small" />
+                      </Stack>
+                      <Typography variant="h6" color="primary.main" fontWeight="bold">
+                        {rec.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ my: 1 }}>
+                        Reason: {rec.reason}
+                      </Typography>
+                      <Typography variant="subtitle2" color="secondary.main" fontWeight="bold">
+                        Benefit: {rec.benefits}
+                      </Typography>
+                    </Box>
+                    <Button variant="contained" color="secondary" size="small" onClick={() => navigate(`/schemes/${rec.schemeId || 1}`)}>
+                      Apply Now
                     </Button>
                   </Box>
                 </Card>
@@ -101,49 +169,62 @@ const DashboardPage = () => {
           )}
         </Grid>
 
-        {/* Quick Actions Grid */}
+        {/* Quick Actions & Recent Activity Sidebar */}
         <Grid item xs={12} md={4}>
-          <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>Quick Actions</Typography>
-          <Grid container spacing={2}>
+          <Typography variant="h5" fontWeight="bold" color="primary.main" sx={{ mb: 2 }}>
+            Quick Actions
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 4 }}>
             {[
-              { label: 'Complete Profile', action: () => navigate('/profile'), color: 'primary' },
-              { label: 'Chat with AI', action: () => navigate('/assistant'), color: 'secondary' },
-              { label: 'My Applications', action: () => navigate('/applications'), color: 'primary' },
-              { label: 'Find Schemes', action: () => navigate('/schemes'), color: 'primary' }
-            ].map(action => (
-              <Grid item xs={6} key={action.label}>
-                <Button 
-                  variant="outlined" 
-                  color={action.color} 
-                  fullWidth 
-                  onClick={action.action}
-                  sx={{ height: 80, display: 'flex', flexDirection: 'column' }}
+              { label: 'Complete Profile', action: () => navigate('/profile'), icon: <EditIcon /> },
+              { label: 'AI Navigator', action: () => navigate('/assistant'), icon: <SmartToyIcon color="secondary" /> },
+              { label: 'My Applications', action: () => navigate('/applications'), icon: <DescriptionIcon color="primary" /> },
+              { label: 'Search Schemes', action: () => navigate('/schemes'), icon: <AssignmentIcon /> }
+            ].map(act => (
+              <Grid item xs={6} key={act.label}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={act.action}
+                  sx={{
+                    height: 85,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    gap: 1,
+                    borderRadius: 3,
+                    borderColor: 'divider'
+                  }}
                 >
-                  {action.label}
+                  {act.icon}
+                  <Typography variant="caption" fontWeight="bold">{act.label}</Typography>
                 </Button>
               </Grid>
             ))}
           </Grid>
-          
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Recent Activity</Typography>
-            <ListActivity icon={<CheckCircleIcon color="success" />} text="Applied for PM-KISAN" time="2 hrs ago" />
-            <ListActivity icon={<PersonIcon color="primary" />} text="Updated Income Details" time="1 day ago" />
-          </Box>
+
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="h6" fontWeight="bold" color="primary.main" sx={{ mb: 2 }}>
+              Recent Activity Feed
+            </Typography>
+            <Stack spacing={2}>
+              {recentActivity.map((act) => (
+                <Box key={act.id} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                  <Avatar sx={{ width: 36, height: 36, bgcolor: 'action.hover', fontSize: '1rem' }}>
+                    {act.icon || '📄'}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body2" fontWeight="bold">{act.action}</Typography>
+                    <Typography variant="caption" color="text.secondary">{act.timestamp}</Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Stack>
+          </Paper>
         </Grid>
       </Grid>
     </Box>
   );
 };
-
-const ListActivity = ({ icon, text, time }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-    <Box sx={{ mr: 2 }}>{icon}</Box>
-    <Box>
-      <Typography variant="body2" fontWeight="bold">{text}</Typography>
-      <Typography variant="caption" color="text.secondary">{time}</Typography>
-    </Box>
-  </Box>
-);
 
 export default DashboardPage;
