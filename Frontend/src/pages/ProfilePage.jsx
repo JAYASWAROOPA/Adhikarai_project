@@ -29,7 +29,8 @@ import {
   TableRow,
   TableCell,
   Paper,
-  Alert
+  Alert,
+  Stack
 } from '@mui/material';
 import { useAuthStore } from '../store/useAuthStore';
 import { fetchMockProfile } from '../services/api';
