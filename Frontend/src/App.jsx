@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -20,6 +20,8 @@ import AssistantPage from './pages/AssistantPage';
 import SchemesPage from './pages/SchemesPage';
 import SchemeDetailsPage from './pages/SchemeDetailsPage';
 import ApplicationsPage from './pages/ApplicationsPage';
+import DocumentVaultPage from './pages/DocumentVaultPage';
+import AutoFillEngine from './components/autofill/AutoFillEngine';
 
 // Admin Pages
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
@@ -34,6 +36,12 @@ import OfficerDashboardPage from './pages/officer/OfficerDashboardPage';
 import OfficerVerificationsPage from './pages/officer/OfficerVerificationsPage';
 import OfficerCitizenDetailPage from './pages/officer/OfficerCitizenDetailPage';
 import OfficerAnalyticsPage from './pages/officer/OfficerAnalyticsPage';
+
+// Helper component for route params in AutoFillEngine
+const AutoFillRouteWrapper = () => {
+  const { id } = useParams();
+  return <AutoFillEngine schemeId={parseInt(id) || 1} />;
+};
 
 function App() {
   return (
@@ -52,6 +60,8 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={[ROLES.CITIZEN, ROLES.ADMIN]} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/vault" element={<DocumentVaultPage />} />
+            <Route path="/apply/:id" element={<AutoFillRouteWrapper />} />
             <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/schemes" element={<SchemesPage />} />
             <Route path="/schemes/:id" element={<SchemeDetailsPage />} />

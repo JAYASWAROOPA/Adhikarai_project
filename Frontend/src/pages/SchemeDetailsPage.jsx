@@ -247,8 +247,8 @@ const SchemeDetailsPage = () => {
                 ))}
               </Stack>
 
-              <Button variant="contained" color="secondary" fullWidth onClick={handleApply} disabled={applying}>
-                {applying ? "Submitting..." : "Apply Directly Now"}
+              <Button variant="contained" color="secondary" fullWidth onClick={() => navigate(`/apply/${scheme?.id || 1}`)}>
+                ⚡ Apply via AI Auto-Fill Engine
               </Button>
             </CardContent>
           </Card>

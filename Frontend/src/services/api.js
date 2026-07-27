@@ -896,7 +896,98 @@ export const officerService = {
   }
 };
 
+// ⚡ 4. Auto-Fill & Document Vault Service Engine
+export const autoFillService = {
+  getAutoFill: async (schemeId) => {
+    const data = await apiFetch(`/application/autofill/${schemeId}`);
+    return data || {
+      success: true,
+      schemeId: parseInt(schemeId),
+      prefilledData: {
+        fullName: "Rajesh Kumar",
+        aadhaarNumber: "9876-5432-1098",
+        mobileNumber: "+91 98765 43210",
+        annualIncome: 450000,
+        residentialAddress: "123 Green Park Colony, Andheri West",
+        district: "Mumbai",
+        state: "Maharashtra",
+        bankName: "State Bank of India",
+        ifscCode: "SBIN0001234",
+        accountNumber: "30987654321"
+      },
+      autofilledFields: ['fullName', 'aadhaarNumber', 'mobileNumber', 'annualIncome', 'residentialAddress', 'district', 'state', 'bankName', 'ifscCode', 'accountNumber'],
+      missingFields: [
+        { field_key: 'existingHouseStatus', label: 'Do you own a Pucca House?' }
+      ],
+      autoAttachedDocuments: [
+        { id: 101, document_type: 'Aadhaar Card', file_name: 'aadhaar_card_rajesh.pdf', status: 'verified' },
+        { id: 102, document_type: 'Income Certificate', file_name: 'income_certificate_2026.pdf', status: 'verified' },
+        { id: 103, document_type: 'Bank Passbook', file_name: 'passbook_sbi.pdf', status: 'verified' }
+      ],
+      missingDocuments: ['Address Proof'],
+      completionPercentage: 87
+    };
+  },
+
+  submitApplication: async (payload) => {
+    const data = await apiFetch('/application/submit', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    return data || {
+      success: true,
+      applicationId: `APP-2026-${Math.floor(100000 + Math.random() * 900000)}`,
+      message: 'Application auto-filled and submitted successfully!',
+      pdfUrl: `/api/application/pdf/APP-2026-998811`,
+      submittedAt: new Date().toISOString(),
+      qrCodeData: `ADHIKARAI-GOV-APP-2026-998811`
+    };
+  }
+};
+
+export const documentVaultService = {
+  getDocuments: async () => {
+    const data = await apiFetch('/documents');
+    return data || {
+      success: true,
+      documents: [
+        { id: 101, document_type: 'Aadhaar Card', file_name: 'aadhaar_card_rajesh.pdf', file_size_kb: 420, upload_date: '2026-07-20', expiry_date: '2030-12-31', status: 'verified' },
+        { id: 102, document_type: 'Income Certificate', file_name: 'income_certificate_2026.pdf', file_size_kb: 650, upload_date: '2026-07-21', expiry_date: '2027-03-31', status: 'verified' },
+        { id: 103, document_type: 'Bank Passbook', file_name: 'passbook_sbi.pdf', file_size_kb: 890, upload_date: '2026-07-22', expiry_date: null, status: 'verified' },
+        { id: 104, document_type: 'Land Records', file_name: 'khasra_772_land.pdf', file_size_kb: 1200, upload_date: '2026-07-22', expiry_date: null, status: 'verified' },
+        { id: 105, document_type: 'Ration Card', file_name: 'ration_card_bpl.pdf', file_size_kb: 340, upload_date: '2026-07-23', expiry_date: null, status: 'verified' }
+      ],
+      vaultUsage: { usedKb: 3500, totalKb: 50000, maxSizeMb: 5 }
+    };
+  },
+
+  uploadDocument: async (docData) => {
+    const data = await apiFetch('/documents/upload', {
+      method: 'POST',
+      body: JSON.stringify(docData)
+    });
+    return data || {
+      success: true,
+      message: 'Document uploaded and attached to Vault!',
+      document: {
+        id: Date.now(),
+        document_type: docData.documentType || 'Other Document',
+        file_name: docData.fileName || 'uploaded_document.pdf',
+        file_size_kb: 512,
+        upload_date: new Date().toISOString().split('T')[0],
+        status: 'verified'
+      }
+    };
+  },
+
+  deleteDocument: async (id) => {
+    const data = await apiFetch(`/documents/${id}`, { method: 'DELETE' });
+    return data || { success: true, message: 'Document removed from Vault' };
+  }
+};
+
 // Legacy exports
 export const fetchMockProfile = contentService.getProfile;
 export const fetchMockSchemes = contentService.getSchemes;
 export const fetchMockRecommendations = contentService.getRecommendations;
+
