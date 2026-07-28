@@ -427,37 +427,46 @@ export const contentService = {
   },
 
   sendChatMessage: async (message) => {
-    const data = await apiFetch('/chat', {
+    const data = await apiFetch('/assistant/chat', {
       method: 'POST',
       body: JSON.stringify({ message })
     });
     return data || {
-      type: "eligibility_check",
-      content: {
-        summary: `Based on your query "${message}", I analyzed your profile against active central & state databases. You are currently eligible for 7 key welfare schemes!`,
-        recommendations: [
-          {
-            name: "Pradhan Mantri Awas Yojana (PMAY)",
-            matchScore: 92,
-            benefits: "₹2.5L housing subsidy",
-            requirements: ["Age: 18-65", "Income: <₹6L", "Location: All States"]
-          },
-          {
-            name: "Ayushman Bharat PM-JAY",
-            matchScore: 95,
-            benefits: "₹5L family health coverage",
-            requirements: ["Income: <₹5L", "No existing private insurance"]
-          }
-        ],
-        missingInfo: ["BPL Card Status verification"],
-        nextSteps: "Complete your document uploads in the Profile section for instant application submission."
-      },
-      suggestions: [
-        "Tell me more about PMAY",
-        "Check eligibility for PM-KISAN",
-        "What documents do I need for Ayushman Bharat?",
-        "How do I track my active applications?"
-      ]
+      success: true,
+      response: {
+        type: "eligibility_check",
+        content: {
+          summary: `Based on your query "${message}", I analyzed your profile against active central & state databases. You are currently eligible for key welfare schemes!`,
+          recommendations: [
+            {
+              id: 1,
+              name: "Pradhan Mantri Awas Yojana (PMAY)",
+              ministry: "Ministry of Housing & Urban Affairs",
+              matchScore: 92,
+              benefits: "₹2.67 Lakh Credit Linked Subsidy",
+              requirements: ["Aadhaar Card", "Income Certificate", "Bank Passbook"],
+              applyUrl: "/apply/1"
+            },
+            {
+              id: 2,
+              name: "PM-KISAN Samman Nidhi",
+              ministry: "Ministry of Agriculture",
+              matchScore: 95,
+              benefits: "₹6,000/year Direct Bank Transfer",
+              requirements: ["Aadhaar Card", "Land Records", "Bank Passbook"],
+              applyUrl: "/apply/2"
+            }
+          ],
+          missingInfo: ["Address Proof in Vault"],
+          nextSteps: "Complete your document uploads in the Smart Vault for 1-click application submission."
+        },
+        suggestions: [
+          "Tell me more about PMAY",
+          "Check eligibility for PM-KISAN",
+          "What documents do I need for Ayushman Bharat?",
+          "Nearest e-Seva office"
+        ]
+      }
     };
   },
 

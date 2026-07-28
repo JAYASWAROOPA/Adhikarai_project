@@ -11,6 +11,7 @@ const applicationRoutes = require('./routes/applicationRoutes');
 const autoFillRoutes = require('./routes/autoFillRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 const officeRoutes = require('./routes/officeRoutes');
+const assistantRoutes = require('./routes/assistantRoutes');
 
 const app = express();
 
@@ -27,10 +28,11 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/application', autoFillRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/offices', officeRoutes);
+app.use('/api/assistant', assistantRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'UP', message: 'ADHIKARAI Backend API is active with Office Locator & AI Auto-Fill Engine' });
+  res.json({ status: 'UP', message: 'ADHIKARAI Backend API is active with Real-Bot AI Assistant, Office Locator & Auto-Fill Engine' });
 });
 
 const PORT = process.env.PORT || 5000;
