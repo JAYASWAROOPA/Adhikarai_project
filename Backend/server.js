@@ -10,6 +10,7 @@ const schemeRoutes = require('./routes/schemeRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const autoFillRoutes = require('./routes/autoFillRoutes');
 const documentRoutes = require('./routes/documentRoutes');
+const officeRoutes = require('./routes/officeRoutes');
 
 const app = express();
 
@@ -25,10 +26,11 @@ app.use('/api/schemes', schemeRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/application', autoFillRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/offices', officeRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'UP', message: 'ADHIKARAI Backend API is active with AI Auto-Fill Engine' });
+  res.json({ status: 'UP', message: 'ADHIKARAI Backend API is active with Office Locator & AI Auto-Fill Engine' });
 });
 
 const PORT = process.env.PORT || 5000;

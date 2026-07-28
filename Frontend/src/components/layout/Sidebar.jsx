@@ -19,7 +19,7 @@ import PolicyIcon from '@mui/icons-material/Policy';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import FolderZipIcon from '@mui/icons-material/FolderZip';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PeopleIcon from '@mui/icons-material/People';
 import SecurityIcon from '@mui/icons-material/Security';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
@@ -77,6 +77,7 @@ const Sidebar = () => {
     return [
       { label: 'Citizen Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
       { label: 'My Profile', path: '/profile', icon: <PersonIcon /> },
+      { label: 'Nearby Offices', path: '/offices', icon: <LocationOnIcon /> },
       { label: 'Smart Vault', path: '/vault', icon: <FolderZipIcon /> },
       { label: 'Find Schemes', path: '/schemes', icon: <PolicyIcon /> },
       { label: 'AI Assistant', path: '/assistant', icon: <SmartToyIcon /> },

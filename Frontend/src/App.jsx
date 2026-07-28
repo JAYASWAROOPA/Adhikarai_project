@@ -21,6 +21,8 @@ import SchemesPage from './pages/SchemesPage';
 import SchemeDetailsPage from './pages/SchemeDetailsPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import DocumentVaultPage from './pages/DocumentVaultPage';
+import OfficeLocatorPage from './pages/OfficeLocatorPage';
+import OfficeDetailPage from './pages/OfficeDetailPage';
 import AutoFillEngine from './components/autofill/AutoFillEngine';
 
 // Admin Pages
@@ -61,6 +63,8 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/vault" element={<DocumentVaultPage />} />
+            <Route path="/offices" element={<OfficeLocatorPage />} />
+            <Route path="/offices/:id" element={<OfficeDetailPage />} />
             <Route path="/apply/:id" element={<AutoFillRouteWrapper />} />
             <Route path="/assistant" element={<AssistantPage />} />
             <Route path="/schemes" element={<SchemesPage />} />

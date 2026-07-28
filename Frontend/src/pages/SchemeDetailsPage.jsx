@@ -28,6 +28,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import BusinessIcon from '@mui/icons-material/Business';
 import { contentService } from '../services/api';
+import SchemeRequiredOfficesWidget from '../components/offices/SchemeRequiredOfficesWidget';
 
 const SchemeDetailsPage = () => {
   const { id } = useParams();
@@ -205,6 +206,9 @@ const SchemeDetailsPage = () => {
               })}
             </Stack>
           </Paper>
+
+          {/* Scheme Required Offices Recommendation Widget */}
+          <SchemeRequiredOfficesWidget schemeId={scheme?.id} schemeName={scheme?.name} />
 
           {/* Application Steps */}
           <Paper elevation={0} variant="outlined" sx={{ p: 3, borderRadius: 3 }}>

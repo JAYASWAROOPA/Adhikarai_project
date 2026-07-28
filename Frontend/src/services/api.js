@@ -986,8 +986,170 @@ export const documentVaultService = {
   }
 };
 
+// 📍 5. Nearby Government Office Locator Service
+export const officeService = {
+  getNearbyOffices: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    const data = await apiFetch(`/offices/nearby?${query}`);
+    return data || {
+      success: true,
+      totalOffices: 6,
+      categories: [
+        { id: 1, code: 'all', name: 'All Office Categories' },
+        { id: 2, code: 'tahsildar', name: 'Tahsildar Office' },
+        { id: 3, code: 'panchayat', name: 'Panchayat Office' },
+        { id: 4, code: 'municipal', name: 'Municipal Office' },
+        { id: 5, code: 'csc', name: 'Common Service Center (CSC)' },
+        { id: 6, code: 'collectorate', name: 'District Collectorate' },
+        { id: 7, code: 'dbt_bank', name: 'DBT-Linked Bank' },
+        { id: 8, code: 'post_office', name: 'Post Office / IPPB' },
+        { id: 9, code: 'aadhaar_center', name: 'Aadhaar Center' },
+        { id: 10, code: 'bdo', name: 'Block Dev Office (BDO)' }
+      ],
+      offices: [
+        {
+          id: 101,
+          name: 'Tahsildar & Revenue Office - Andheri West',
+          category_code: 'tahsildar',
+          category_name: 'Tahsildar Office',
+          address: 'Old Police Station Compound, S.V. Road, Andheri West',
+          district: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400058',
+          distance_km: 1.8,
+          travel_time: '6 mins drive (18 mins walk)',
+          contact_number: '+91 22 2620 4589',
+          email: 'tahsildar.andheri@maharashtra.gov.in',
+          officer_name: 'Mr. Suresh Patil (Tehsildar)',
+          timings: '09:30 AM - 05:30 PM (Mon-Sat)',
+          is_open: true,
+          wheelchair_accessible: true,
+          google_maps_url: 'https://www.google.com/maps/dir/?api=1&destination=19.1197,72.8464',
+          services: ['Income Certificate', 'Community / Caste Certificate', 'Solvency Certificate', 'Land Revenue Verification'],
+          parking: 'Free Public Parking Available',
+          public_transport: '5 mins walk from Andheri Railway Station'
+        },
+        {
+          id: 102,
+          name: 'Common Service Center (CSC) - Bandra e-Seva',
+          category_code: 'csc',
+          category_name: 'Common Service Center (CSC)',
+          address: 'Shop 12, Hill Road, Near Elco Market, Bandra West',
+          district: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400050',
+          distance_km: 2.4,
+          travel_time: '8 mins drive (24 mins walk)',
+          contact_number: '+91 98201 45902',
+          email: 'csc.bandra@eshop.gov.in',
+          officer_name: 'Vikas Kadam (CSC Manager)',
+          timings: '09:00 AM - 08:00 PM (Daily)',
+          is_open: true,
+          wheelchair_accessible: true,
+          google_maps_url: 'https://www.google.com/maps/dir/?api=1&destination=19.0544,72.8402',
+          services: ['Aadhaar Print & Update', 'PMAY Online Application', 'PM-KISAN E-KYC', 'Ayushman Bharat Card'],
+          parking: 'Paid Two-Wheeler Parking',
+          public_transport: '10 mins bus from Bandra Station'
+        },
+        {
+          id: 104,
+          name: 'State Bank of India (DBT Nodal Branch) - Fort',
+          category_code: 'dbt_bank',
+          category_name: 'DBT-Linked Bank',
+          address: 'Main Building, Horniman Circle, Fort',
+          district: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400001',
+          distance_km: 3.1,
+          travel_time: '12 mins drive',
+          contact_number: '+91 22 2266 0123',
+          email: 'dbt.fort@sbi.co.in',
+          officer_name: 'Priya Nair (Chief Nodal Officer)',
+          timings: '10:00 AM - 04:00 PM (Mon-Sat)',
+          is_open: true,
+          wheelchair_accessible: true,
+          google_maps_url: 'https://www.google.com/maps/dir/?api=1&destination=18.9322,72.8335',
+          services: ['Direct Benefit Transfer Account Seeding', 'Aadhaar-NPCI Mapper', 'PM-KISAN DBT Beneficiary Account'],
+          parking: 'Street Parking (Pay & Park)',
+          public_transport: '5 mins walk from CST Railway Station'
+        }
+      ]
+    };
+  },
+
+  getOfficeById: async (id) => {
+    const data = await apiFetch(`/offices/${id}`);
+    return data || {
+      success: true,
+      office: {
+        id: parseInt(id),
+        name: 'Tahsildar & Revenue Office - Andheri West',
+        category_code: 'tahsildar',
+        category_name: 'Tahsildar Office',
+        address: 'Old Police Station Compound, S.V. Road, Andheri West',
+        district: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400058',
+        distance_km: 1.8,
+        travel_time: '6 mins drive (18 mins walk)',
+        contact_number: '+91 22 2620 4589',
+        email: 'tahsildar.andheri@maharashtra.gov.in',
+        officer_name: 'Mr. Suresh Patil (Tehsildar)',
+        timings: '09:30 AM - 05:30 PM (Mon-Sat)',
+        is_open: true,
+        wheelchair_accessible: true,
+        google_maps_url: 'https://www.google.com/maps/dir/?api=1&destination=19.1197,72.8464',
+        services: ['Income Certificate', 'Community / Caste Certificate', 'Solvency Certificate', 'Land Revenue Verification', 'Domicile Certificate'],
+        parking: 'Free Public Parking Available',
+        public_transport: '5 mins walk from Andheri Railway Station / Metro'
+      }
+    };
+  },
+
+  getOfficesForScheme: async (schemeId) => {
+    const data = await apiFetch(`/offices/scheme/${schemeId}`);
+    return data || {
+      success: true,
+      schemeId: parseInt(schemeId),
+      recommendedOffices: [
+        {
+          id: 101,
+          name: 'Tahsildar & Revenue Office - Andheri West',
+          category_name: 'Tahsildar Office',
+          address: 'S.V. Road, Andheri West',
+          district: 'Mumbai',
+          distance_km: 1.8,
+          travel_time: '6 mins drive',
+          google_maps_url: 'https://www.google.com/maps/dir/?api=1&destination=19.1197,72.8464'
+        },
+        {
+          id: 102,
+          name: 'Common Service Center (CSC) - Bandra e-Seva',
+          category_name: 'CSC Center',
+          address: 'Hill Road, Bandra West',
+          district: 'Mumbai',
+          distance_km: 2.4,
+          travel_time: '8 mins drive',
+          google_maps_url: 'https://www.google.com/maps/dir/?api=1&destination=19.0544,72.8402'
+        },
+        {
+          id: 104,
+          name: 'State Bank of India (DBT Branch) - Fort',
+          category_name: 'DBT Bank',
+          address: 'Horniman Circle, Fort',
+          district: 'Mumbai',
+          distance_km: 3.1,
+          travel_time: '12 mins drive',
+          google_maps_url: 'https://www.google.com/maps/dir/?api=1&destination=18.9322,72.8335'
+        }
+      ]
+    };
+  }
+};
+
 // Legacy exports
 export const fetchMockProfile = contentService.getProfile;
 export const fetchMockSchemes = contentService.getSchemes;
 export const fetchMockRecommendations = contentService.getRecommendations;
+
 
