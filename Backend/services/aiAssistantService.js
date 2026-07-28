@@ -34,8 +34,19 @@ exports.processUserMessage = async (userPrompt, profile = DEFAULT_CITIZEN_PROFIL
   let requiredDocs = [];
   let suggestions = [];
 
-  // 1. Greeting Intent
-  if (/\b(hi|hello|hey|namaste|greetings|who are you)\b/.test(query)) {
+  // 1. Affection / Appreciation Intent
+  if (/\b(i love you|love you|love u|i love u|thank you|thanks|awesome|best bot|great job)\b/.test(query)) {
+    intent = 'affection';
+    summary = `That is so kind of you, ${profile.name}! 💙 As your AI Government Welfare Assistant, my true passion is empowering citizens like you with direct, seamless access to government schemes, housing subsidies, and welfare benefits. How can I assist you with your welfare applications today?`;
+    suggestions = [
+      'What schemes am I eligible for?',
+      'Tell me about PMAY Housing Scheme',
+      'Check PM-KISAN Farmer Grant',
+      'Where is my nearest Tahsildar office?'
+    ];
+  }
+  // 2. Greeting Intent
+  else if (/\b(hi|hello|hey|namaste|greetings|who are you)\b/.test(query)) {
     intent = 'greeting';
     summary = `Hello ${profile.name}! I am your AI Government Scheme Assistant powered by LangChain reasoning. I can check your eligibility across 500+ welfare schemes, tell you required documents, or navigate you to nearest e-Seva offices. What can I help you with today?`;
     suggestions = [
