@@ -13,7 +13,8 @@ import {
   Paper,
   Rating,
   Divider,
-  CircularProgress
+  CircularProgress,
+  IconButton
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -25,7 +26,19 @@ import UserPlusIcon from '@mui/icons-material/PersonAdd';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BusinessIcon from '@mui/icons-material/Business';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import InfoIcon from '@mui/icons-material/Info';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import FolderZipIcon from '@mui/icons-material/FolderZip';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { contentService } from '../services/api';
+
+const ANNOUNCEMENTS = [
+  "📢 Pradhan Mantri Awas Yojana 2.0 applications are now active with enhanced ₹2.67L credit subsidy!",
+  "🌾 PM-KISAN 17th Installment ₹2,000 direct bank transfer scheduled for verified landholding farmers.",
+  "🏥 Ayushman Bharat PM-JAY expands cashless hospital coverage up to ₹5 Lakhs per family.",
+  "💳 Direct Benefit Transfer (DBT) bank account Aadhaar seeding is mandatory for scheme disbursements."
+];
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -75,7 +88,19 @@ const LandingPage = () => {
 
   return (
     <Box>
-      {/* Hero Section with Deep Government Blue Gradient */}
+      {/* Latest Updates & Announcements Banner Marquee */}
+      <Box sx={{ bgcolor: 'secondary.main', color: '#fff', py: 1, px: 2, overflow: 'hidden' }}>
+        <Container maxWidth="lg">
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Chip icon={<CampaignIcon style={{ color: '#fff' }} />} label="LATEST UPDATES" size="small" sx={{ bgcolor: 'rgba(0,0,0,0.2)', color: '#fff', fontWeight: 'bold' }} />
+            <Typography variant="body2" fontWeight="500" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {ANNOUNCEMENTS[0]}
+            </Typography>
+          </Stack>
+        </Container>
+      </Box>
+
+      {/* Hero Section with Deep Government Blue Gradient & Glassmorphism */}
       <Box
         sx={{
           background: 'linear-gradient(135deg, #1a365d 0%, #10243d 60%, #0b1a2e 100%)',
@@ -90,10 +115,10 @@ const LandingPage = () => {
             position: 'absolute',
             top: '-10%',
             right: '-5%',
-            width: 450,
-            height: 450,
+            width: 500,
+            height: 500,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(237,137,54,0.18) 0%, rgba(0,0,0,0) 70%)',
+            background: 'radial-gradient(circle, rgba(237,137,54,0.22) 0%, rgba(0,0,0,0) 70%)',
             pointerEvents: 'none'
           }}
         />
@@ -103,26 +128,27 @@ const LandingPage = () => {
             <Grid item xs={12} md={7}>
               <Chip
                 icon={<VerifiedUserIcon style={{ color: '#ed8936' }} />}
-                label={hero?.trustIndicators?.[0] || "Govt of India Initiative • AI-Powered Discovery"}
+                label={hero?.trustIndicators?.[0] || "Govt of India Initiative • AI-Powered Discovery Engine"}
                 sx={{
                   bgcolor: 'rgba(255, 255, 255, 0.1)',
                   color: '#ffffff',
                   backdropFilter: 'blur(10px)',
                   mb: 3,
-                  px: 1
+                  px: 1,
+                  fontWeight: 'bold'
                 }}
               />
 
-              <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 700, mb: 1 }}>
+              <Typography variant="h6" sx={{ color: 'secondary.main', fontWeight: 700, mb: 1, letterSpacing: 1 }}>
                 {hero?.title?.hindi || "सशक्त नागरिक, सशक्त भारत"}
               </Typography>
 
-              <Typography variant="h1" sx={{ fontSize: { xs: '2.2rem', md: '3.2rem' }, fontWeight: 800, mb: 2, lineHeight: 1.2 }}>
+              <Typography variant="h1" sx={{ fontSize: { xs: '2.2rem', md: '3.4rem' }, fontWeight: 800, mb: 2, lineHeight: 1.2 }}>
                 {hero?.title?.english || "Empowering Citizens, Building India"}
               </Typography>
 
-              <Typography variant="h6" sx={{ opacity: 0.9, mb: 4, fontWeight: 400, maxWidth: 580 }}>
-                {hero?.subtitle || "AI-Powered Platform for Government Scheme Discovery & Application"}
+              <Typography variant="h6" sx={{ opacity: 0.9, mb: 4, fontWeight: 400, maxWidth: 580, lineHeight: 1.6 }}>
+                ADHIKARAI is a database-driven AI Navigator bridging Indian citizens to 500+ Central and State Government welfare schemes with 1-click auto form filling.
               </Typography>
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 5 }}>
@@ -130,48 +156,45 @@ const LandingPage = () => {
                   variant="contained"
                   color="secondary"
                   size="large"
-                  onClick={() => navigate(hero?.ctas?.[1]?.url || '/signup')}
+                  onClick={() => navigate('/signup')}
                   endIcon={<ArrowForwardIcon />}
-                  sx={{ py: 1.5, px: 3, fontSize: '1.05rem', fontWeight: 700 }}
+                  sx={{ py: 1.5, px: 4, fontSize: '1.05rem', fontWeight: 800, borderRadius: 3 }}
                 >
-                  {hero?.ctas?.[1]?.text || "Get Started Free"}
+                  Get Started Free
                 </Button>
                 <Button
                   variant="outlined"
                   size="large"
-                  onClick={() => navigate(hero?.ctas?.[0]?.url || '/schemes')}
+                  onClick={() => navigate('/schemes')}
                   sx={{
                     color: '#ffffff',
                     borderColor: 'rgba(255, 255, 255, 0.4)',
                     py: 1.5,
-                    px: 3,
+                    px: 4,
                     fontSize: '1.05rem',
+                    fontWeight: 700,
+                    borderRadius: 3,
                     '&:hover': { borderColor: '#ffffff', bgcolor: 'rgba(255, 255, 255, 0.08)' }
                   }}
                 >
-                  {hero?.ctas?.[0]?.text || "Explore All Schemes"}
+                  Explore All Schemes
                 </Button>
               </Stack>
 
               {/* Trust Indicators */}
-              <Stack direction="row" spacing={3} alignItems="center">
-                {hero?.trustIndicators?.map((item, idx) => (
+              <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap">
+                {['256-bit AES Security', 'Aadhaar & Digilocker Ready', '500+ Verified Programs'].map((item, idx) => (
                   <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <SecurityIcon color="secondary" fontSize="small" />
-                    <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 500 }}>
+                    <Typography variant="caption" sx={{ opacity: 0.85, fontWeight: 600 }}>
                       {item}
                     </Typography>
                   </Box>
-                )) || (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <SecurityIcon color="secondary" fontSize="small" />
-                    <Typography variant="caption" sx={{ opacity: 0.85 }}>Secure & Verified</Typography>
-                  </Box>
-                )}
+                ))}
               </Stack>
             </Grid>
 
-            {/* Glassmorphism Feature Highlight Card */}
+            {/* Glassmorphism Feature Card */}
             <Grid item xs={12} md={5}>
               <Paper
                 elevation={0}
@@ -185,12 +208,12 @@ const LandingPage = () => {
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                  <Avatar sx={{ bgcolor: 'secondary.main', width: 50, height: 50 }}>
+                  <Avatar sx={{ bgcolor: 'secondary.main', width: 52, height: 52 }}>
                     <SmartToyIcon fontSize="large" />
                   </Avatar>
                   <Box>
-                    <Typography variant="h6" fontWeight="bold">AI Agent Assistant</Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8 }}>Database-Driven Matching Engine</Typography>
+                    <Typography variant="h6" fontWeight="bold">AI Scheme Navigator</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.8 }}>LangChain Database Reasoning Engine</Typography>
                   </Box>
                 </Box>
 
@@ -201,31 +224,121 @@ const LandingPage = () => {
                 <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.15)' }} />
 
                 <Grid container spacing={2}>
-                  {hero?.stats?.map((st, i) => (
-                    <Grid item xs={4} key={i} sx={{ textAlign: 'center' }}>
-                      <Typography variant="h5" fontWeight="bold" color="secondary.main">{st.value}{typeof st.value === 'number' ? '+' : ''}</Typography>
-                      <Typography variant="caption" sx={{ opacity: 0.85 }}>{st.label}</Typography>
-                    </Grid>
-                  )) || (
-                    <>
-                      <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                        <Typography variant="h5" fontWeight="bold" color="secondary.main">500+</Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.8 }}>Total Schemes</Typography>
-                      </Grid>
-                      <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                        <Typography variant="h5" fontWeight="bold" color="secondary.main">50k+</Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.8 }}>Citizens</Typography>
-                      </Grid>
-                      <Grid item xs={4} sx={{ textAlign: 'center' }}>
-                        <Typography variant="h5" fontWeight="bold" color="secondary.main">98%</Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.8 }}>Success Rate</Typography>
-                      </Grid>
-                    </>
-                  )}
+                  <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                    <Typography variant="h5" fontWeight="bold" color="secondary.main">500+</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.8 }}>Total Schemes</Typography>
+                  </Grid>
+                  <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                    <Typography variant="h5" fontWeight="bold" color="secondary.main">50k+</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.8 }}>Citizens</Typography>
+                  </Grid>
+                  <Grid item xs={4} sx={{ textAlign: 'center' }}>
+                    <Typography variant="h5" fontWeight="bold" color="secondary.main">98%</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.8 }}>Success Rate</Typography>
+                  </Grid>
                 </Grid>
               </Paper>
             </Grid>
           </Grid>
+        </Container>
+      </Box>
+
+      {/* Short Platform Introduction */}
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Paper elevation={0} sx={{ p: 4, borderRadius: 4, bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.100' }}>
+          <Grid container spacing={3} alignItems="center">
+            <Grid item xs={12} md={8}>
+              <Typography variant="h5" fontWeight="bold" color="primary.main" gutterBottom>
+                What is ADHIKARAI?
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph sx={{ lineHeight: 1.7 }}>
+                ADHIKARAI is India’s first database-first, multi-role welfare scheme navigation platform. It eliminates bureaucratic delays by allowing citizens to fill their profile once, automatically matching eligibility, auto-populating applications, and finding nearby government offices.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+              <Button variant="contained" color="primary" onClick={() => navigate('/about')} endIcon={<InfoIcon />}>
+                Learn More About ADHIKARAI
+              </Button>
+            </Grid>
+          </Grid>
+        </Paper>
+      </Container>
+
+      {/* Trending / Recent Schemes (Horizontally Scrolling Cards) */}
+      <Box sx={{ bgcolor: 'background.default', py: 8 }}>
+        <Container maxWidth="lg">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Box>
+              <Typography variant="subtitle1" color="secondary.main" fontWeight="bold">
+                TRENDING WELFARE SCHEMES
+              </Typography>
+              <Typography variant="h3" color="primary.main" fontWeight="bold">
+                Popular Welfare Programs
+              </Typography>
+            </Box>
+            <Button variant="text" color="secondary" onClick={() => navigate('/schemes')} endIcon={<ArrowForwardIcon />}>
+              View All Schemes
+            </Button>
+          </Box>
+
+          {loading ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <CircularProgress color="secondary" />
+            </Box>
+          ) : (
+            /* Horizontally Scrolling Container */
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 3,
+                overflowX: 'auto',
+                pb: 2,
+                pt: 1,
+                scrollBehavior: 'smooth',
+                '&::-webkit-scrollbar': { height: 8 },
+                '&::-webkit-scrollbar-thumb': { bgcolor: 'primary.200', borderRadius: 4 }
+              }}
+            >
+              {featuredSchemes.map((s) => (
+                <Card
+                  key={s.id}
+                  sx={{
+                    minWidth: 320,
+                    maxWidth: 340,
+                    flexShrink: 0,
+                    borderRadius: 4,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'transform 0.3s ease',
+                    '&:hover': { transform: 'translateY(-6px)' }
+                  }}
+                >
+                  <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                      <Chip label={s.category || "Welfare"} color="primary" size="small" sx={{ fontWeight: 'bold' }} />
+                      <Chip label={`${s.matchPercentage || 92}% Match`} color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                    </Stack>
+                    <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom>
+                      {s.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" paragraph sx={{ minHeight: 48, lineHeight: 1.5 }}>
+                      {s.description}
+                    </Typography>
+                    <Typography variant="subtitle2" color="secondary.main" fontWeight="bold">
+                      Benefit: {s.benefits}
+                    </Typography>
+                  </CardContent>
+                  <Box sx={{ p: 2, pt: 0 }}>
+                    <Button variant="contained" color="secondary" fullWidth onClick={() => navigate(`/schemes/${s.id}`)}>
+                      Apply / View Details
+                    </Button>
+                  </Box>
+                </Card>
+              ))}
+            </Box>
+          )}
         </Container>
       </Box>
 
@@ -237,9 +350,6 @@ const LandingPage = () => {
           </Typography>
           <Typography variant="h2" color="primary.main" gutterBottom>
             How ADHIKARAI Works
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
-            Empowering every citizen with effortless scheme discovery and automated application workflows.
           </Typography>
         </Box>
 
@@ -286,103 +396,63 @@ const LandingPage = () => {
         </Grid>
       </Container>
 
-      {/* Featured Schemes Section */}
-      <Box sx={{ bgcolor: 'background.default', py: 8 }}>
+      {/* Attractive About Preview Section with Animations */}
+      <Box sx={{ bgcolor: 'primary.50', py: 8 }}>
         <Container maxWidth="lg">
-          <Box sx={{ textAlign: 'center', mb: 6 }}>
-            <Typography variant="subtitle1" color="secondary.main" fontWeight="bold">
-              FEATURED SCHEMES
-            </Typography>
-            <Typography variant="h2" color="primary.main" gutterBottom>
-              Top Welfare Programs for You
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
-              Direct database query feeds of active central & state housing, agriculture, and healthcare welfare.
-            </Typography>
-          </Box>
-
-          {loading ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <CircularProgress color="secondary" />
-            </Box>
-          ) : (
-            <Grid container spacing={4}>
-              {featuredSchemes.map((s) => (
-                <Grid item xs={12} md={4} key={s.id}>
-                  <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 1 }}>
-                    <CardContent sx={{ flexGrow: 1 }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                        <Chip label={s.category || "General"} color="primary" size="small" />
-                        <Chip label={`${s.matchPercentage || 90}% Match`} color="success" size="small" />
-                      </Stack>
-                      <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom>
-                        {s.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" paragraph sx={{ minHeight: 48 }}>
-                        {s.description}
-                      </Typography>
-                      <Typography variant="subtitle2" color="secondary.main" fontWeight="bold">
-                        Benefit: {s.benefits}
-                      </Typography>
-                    </CardContent>
-                    <Box sx={{ p: 2, pt: 0 }}>
-                      <Button variant="outlined" color="primary" fullWidth onClick={() => navigate(`/schemes/${s.id}`)}>
-                        View Details & Eligibility
-                      </Button>
-                    </Box>
-                  </Card>
+          <Grid container spacing={4} alignItems="center">
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle1" color="secondary.main" fontWeight="bold">
+                REVOLUTIONIZING CITIZEN WELFARE
+              </Typography>
+              <Typography variant="h2" color="primary.main" gutterBottom>
+                Built for National Scale
+              </Typography>
+              <Typography variant="body1" color="text.secondary" paragraph sx={{ lineHeight: 1.7 }}>
+                ADHIKARAI replaces traditional fragmented government portals with an end-to-end multi-role system connecting Citizens, Nodal Verification Officers, and System Administrators.
+              </Typography>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={6}>
+                  <Paper elevation={0} sx={{ p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                    <AutoFixHighIcon color="secondary" />
+                    <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 1 }}>AI Auto-Fill Engine</Typography>
+                    <Typography variant="caption" color="text.secondary">Zero redundant form filling</Typography>
+                  </Paper>
                 </Grid>
-              ))}
+                <Grid item xs={6}>
+                  <Paper elevation={0} sx={{ p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                    <FolderZipIcon color="primary" />
+                    <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 1 }}>Smart Vault</Typography>
+                    <Typography variant="caption" color="text.secondary">Automatic document reuse</Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
             </Grid>
-          )}
-        </Container>
-      </Box>
-
-      {/* Departments Section */}
-      <Container maxWidth="lg" sx={{ py: 8 }}>
-        <Box sx={{ textAlign: 'center', mb: 6 }}>
-          <Typography variant="subtitle1" color="secondary.main" fontWeight="bold">
-            GOVERNMENT PARTNERS
-          </Typography>
-          <Typography variant="h2" color="primary.main" gutterBottom>
-            Integrated Departments
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
-            Direct integration with official ministries to process application verification and benefit transfers.
-          </Typography>
-        </Box>
-
-        <Grid container spacing={3}>
-          {departments.map((dept) => (
-            <Grid item xs={12} sm={6} md={3} key={dept.id}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  textAlign: 'center',
-                  borderRadius: 3,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  bgcolor: 'background.paper',
-                  transition: 'all 0.3s ease',
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: 4 }
-                }}
-              >
-                <Avatar sx={{ bgcolor: 'primary.50', color: 'primary.500', mx: 'auto', mb: 2, width: 56, height: 56, fontSize: '1.8rem' }}>
-                  {dept.logo || <BusinessIcon />}
-                </Avatar>
-                <Typography variant="subtitle1" fontWeight="bold" color="primary.main">
-                  {dept.abbreviation || dept.name}
+            <Grid item xs={12} md={6}>
+              <Paper elevation={0} sx={{ p: 4, borderRadius: 4, border: '2px solid', borderColor: 'primary.main', bgcolor: '#ffffff' }}>
+                <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom>
+                  Platform Key Metrics
                 </Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                  {dept.name}
-                </Typography>
-                <Chip label={`${dept.schemeCount || 10}+ Active Schemes`} size="small" color="secondary" variant="outlined" />
+                <Stack spacing={2} sx={{ mt: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">Supported Ministries</Typography>
+                    <Typography variant="body2" fontWeight="bold">28 Departments</Typography>
+                  </Box>
+                  <Divider />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">Active Citizen Profiles</Typography>
+                    <Typography variant="body2" fontWeight="bold">54,200+</Typography>
+                  </Box>
+                  <Divider />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">Applications Processed</Typography>
+                    <Typography variant="body2" fontWeight="bold">12,850+</Typography>
+                  </Box>
+                </Stack>
               </Paper>
             </Grid>
-          ))}
-        </Grid>
-      </Container>
+          </Grid>
+        </Container>
+      </Box>
 
       {/* Success Stories Section */}
       <Box sx={{ bgcolor: 'background.default', py: 8 }}>
