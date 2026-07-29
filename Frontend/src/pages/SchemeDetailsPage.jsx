@@ -211,9 +211,9 @@ const SchemeDetailsPage = () => {
           <SchemeRequiredOfficesWidget schemeId={scheme?.id} schemeName={scheme?.name} />
 
           {/* Application Steps */}
-          <Paper elevation={0} variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
+          <Paper elevation={0} variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 3 }}>
             <Typography variant="h5" fontWeight="bold" color="primary.main" gutterBottom>
-              Application Workflow Steps
+              Application Process & Timeline (Est. 15-30 Days)
             </Typography>
             <Stack spacing={2} sx={{ mt: 2 }}>
               {(scheme?.applicationProcess || [
@@ -227,6 +227,25 @@ const SchemeDetailsPage = () => {
                   </Avatar>
                   <Typography variant="body2" fontWeight="500">{step}</Typography>
                 </Box>
+              ))}
+            </Stack>
+          </Paper>
+
+          {/* Frequently Asked Questions (FAQs) Accordion */}
+          <Paper elevation={0} variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
+            <Typography variant="h5" fontWeight="bold" color="primary.main" gutterBottom>
+              Frequently Asked Questions (FAQs)
+            </Typography>
+            <Stack spacing={1.5} sx={{ mt: 2 }}>
+              {[
+                { q: "Is there any fee to apply through ADHIKARAI?", a: "No, applying through ADHIKARAI is 100% free for all Indian citizens." },
+                { q: "Can I apply if my profile is only 85% complete?", a: "You can explore schemes and check eligibility, but profile must be 100% complete before final submission." },
+                { q: "How long does document verification take?", a: "Nodal Officers process verification within 3 to 7 working days." }
+              ].map((faq, fIdx) => (
+                <Paper key={fIdx} elevation={0} sx={{ p: 2, bgcolor: 'background.default', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                  <Typography variant="subtitle2" fontWeight="bold" color="primary.main">Q: {faq.q}</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{faq.a}</Typography>
+                </Paper>
               ))}
             </Stack>
           </Paper>
