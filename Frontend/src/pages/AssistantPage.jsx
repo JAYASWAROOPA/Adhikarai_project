@@ -60,6 +60,8 @@ const AssistantPage = () => {
     scrollToBottom();
   }, [messages, loading]);
 
+  const isProfileIncomplete = user?.profileCompletion ? user.profileCompletion < 100 : true;
+
   const handleSend = async (textToSend) => {
     const text = textToSend || input;
     if (!text.trim()) return;
@@ -77,9 +79,15 @@ const AssistantPage = () => {
       const resType = resObj?.type || 'eligibility_check';
       const content = resObj?.content || {};
 
+      // If profile is incomplete, prepend reminder notice if not present
+      let summaryText = content.summary || "I analyzed your request against active government databases.";
+      if (isProfileIncomplete && !summaryText.includes("complete your profile")) {
+        summaryText = `⚠️ Please complete your profile to receive 100% accurate personalized recommendations.\n\n` + summaryText;
+      }
+
       assistantMsg = {
         sender: 'assistant',
-        text: content.summary || "I analyzed your request against active government databases.",
+        text: summaryText,
         structured: content,
         type: resType
       };
