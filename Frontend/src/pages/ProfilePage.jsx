@@ -147,6 +147,7 @@ const ProfilePage = () => {
     } else {
       try {
         await contentService.updateProfile(data);
+        useAuthStore.getState().setProfileCompletion(100);
         setSubmitSuccess(true);
       } catch (err) {
         console.error('Error updating profile:', err);
