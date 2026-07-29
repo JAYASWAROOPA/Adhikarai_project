@@ -20,7 +20,9 @@ import {
   MenuItem,
   Select,
   FormControl,
-  InputLabel
+  InputLabel,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SearchIcon from '@mui/icons-material/Search';
@@ -29,11 +31,12 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ShareIcon from '@mui/icons-material/Share';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PhoneIcon from '@mui/icons-material/Phone';
-import EmailIcon from '@mui/icons-material/Email';
 import AccessibleIcon from '@mui/icons-material/Accessible';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
+import MapIcon from '@mui/icons-material/Map';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import { useNavigate } from 'react-router-dom';
 import { officeService } from '../services/api';
 
@@ -52,9 +55,10 @@ const OfficeLocatorPage = () => {
   const [loading, setLoading] = useState(true);
   const [offices, setOffices] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
   
   // Location state
-  const [userCoords, setUserCoords] = useState({ lat: 19.0760, lng: 72.8777 }); // Default Mumbai
+  const [userCoords, setUserCoords] = useState({ lat: 19.0760, lng: 72.8777 });
   const [geoStatus, setGeoStatus] = useState('Detecting browser location...');
   const [useManualLoc, setUseManualLoc] = useState(false);
   const [selectedState, setSelectedState] = useState('Maharashtra');
@@ -67,7 +71,6 @@ const OfficeLocatorPage = () => {
   const [wheelchairOnly, setWheelchairOnly] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
-  // 1. Detect Geolocation on Load
   useEffect(() => {
     detectLocation();
   }, []);
@@ -96,7 +99,6 @@ const OfficeLocatorPage = () => {
     }
   };
 
-  // 2. Fetch Offices matching filters
   useEffect(() => {
     async function loadOffices() {
       try {
@@ -146,13 +148,29 @@ const OfficeLocatorPage = () => {
   return (
     <Box sx={{ py: 3 }}>
       {/* Header Banner */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" fontWeight="bold" color="primary.main" gutterBottom>
-          Nearby Government Office & e-Seva Locator
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Locate nearest Tahsildar Offices, Gram Panchayats, Common Service Centers (CSC), Aadhaar Kendras, and DBT Banks.
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography variant="h3" fontWeight="bold" color="primary.main" gutterBottom>
+            Nearby Government Office & e-Seva Locator
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Locate nearest Tahsildar Offices, Gram Panchayats, Common Service Centers (CSC), Aadhaar Kendras, and DBT Banks.
+          </Typography>
+        </Box>
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(e, val) => val && setViewMode(val)}
+          color="secondary"
+          size="small"
+        >
+          <ToggleButton value="list" sx={{ fontWeight: 'bold' }}>
+            <ViewListIcon sx={{ mr: 0.5 }} /> List View
+          </ToggleButton>
+          <ToggleButton value="map" sx={{ fontWeight: 'bold' }}>
+            <MapIcon sx={{ mr: 0.5 }} /> Interactive Map View
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       {toastMsg && (
@@ -161,8 +179,8 @@ const OfficeLocatorPage = () => {
         </Alert>
       )}
 
-      {/* Geolocation & Location Control Bar */}
-      <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'primary.50' }}>
+      {/* Geolocation Control Bar */}
+      <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'primary.50' }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={6}>
             <Stack direction="row" spacing={1.5} alignItems="center">
@@ -278,7 +296,41 @@ const OfficeLocatorPage = () => {
         </Grid>
       </Paper>
 
-      {/* Office Cards Grid */}
+      {/* View Mode: Map Container Preview */}
+      {viewMode === 'map' && (
+        <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 4, border: '2px solid', borderColor: 'secondary.main', bgcolor: '#ffffff' }}>
+          <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom display="flex" alignItems="center" gap={1}>
+            <MapIcon color="secondary" /> Interactive GPS Map Container ({offices.length} Pins Loaded)
+          </Typography>
+          <Box
+            sx={{
+              height: 380,
+              width: '100%',
+              borderRadius: 3,
+              overflow: 'hidden',
+              border: '1px solid',
+              borderColor: 'divider',
+              position: 'relative',
+              background: '#e5e3df',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <iframe
+              title="Google Maps Locator"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              src={`https://maps.google.com/maps?q=${userCoords.lat},${userCoords.lng}&z=13&output=embed`}
+            />
+          </Box>
+        </Paper>
+      )}
+
+      {/* Office Cards List */}
       <Typography variant="h6" fontWeight="bold" color="primary.main" sx={{ mb: 2 }}>
         Nearest Government Offices & Service Centers ({offices.length})
       </Typography>
@@ -311,7 +363,6 @@ const OfficeLocatorPage = () => {
                     {office.address}, {office.district}, {office.pincode}
                   </Typography>
 
-                  {/* Travel Time & Timings */}
                   <Stack direction="row" spacing={2} sx={{ mb: 2 }} flexWrap="wrap">
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <DirectionsCarIcon fontSize="small" color="action" />
@@ -323,7 +374,6 @@ const OfficeLocatorPage = () => {
                     </Box>
                   </Stack>
 
-                  {/* Available Services */}
                   <Typography variant="caption" fontWeight="bold" color="primary.main" display="block" sx={{ mb: 1 }}>
                     Available Services:
                   </Typography>
@@ -333,21 +383,14 @@ const OfficeLocatorPage = () => {
                     ))}
                   </Box>
 
-                  {/* Contact Info */}
                   <Stack spacing={0.5} sx={{ mb: 2 }}>
                     {office.contact_number && (
                       <Typography variant="caption" color="text.secondary" display="flex" alignItems="center" gap={0.5}>
                         <PhoneIcon fontSize="inherit" color="primary" /> {office.contact_number}
                       </Typography>
                     )}
-                    {office.officer_name && (
-                      <Typography variant="caption" color="text.secondary">
-                        Nodal Officer: <strong>{office.officer_name}</strong>
-                      </Typography>
-                    )}
                   </Stack>
 
-                  {/* Action Buttons */}
                   <Grid container spacing={1} sx={{ mt: 'auto' }}>
                     <Grid item xs={12} sm={6}>
                       <Button
