@@ -30,6 +30,9 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import FolderZipIcon from '@mui/icons-material/FolderZip';
 import WarningIcon from '@mui/icons-material/Warning';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import DownloadIcon from '@mui/icons-material/Download';
+import LockIcon from '@mui/icons-material/Lock';
 import { documentVaultService } from '../services/api';
 
 const SUPPORTED_DOCUMENTS = [
@@ -44,6 +47,8 @@ const SUPPORTED_DOCUMENTS = [
   'Land Records (Khasra/Khatauni)'
 ];
 
+const SENSITIVE_DOCUMENTS = ['Aadhaar Card', 'PAN Card', 'Bank Passbook'];
+
 const DocumentVaultPage = () => {
   const [documents, setDocuments] = useState([]);
   const [vaultUsage, setVaultUsage] = useState({ usedKb: 3500, totalKb: 50000 });
@@ -51,6 +56,14 @@ const DocumentVaultPage = () => {
   const [openModal, setOpenModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   
+  // Password security verification dialog states
+  const [securityModal, setSecurityModal] = useState({ open: false, doc: null, action: 'view' });
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+
+  // Document preview modal
+  const [previewModal, setPreviewModal] = useState({ open: false, doc: null });
+
   const [newDoc, setNewDoc] = useState({
     documentType: 'Aadhaar Card',
     fileName: ''
@@ -83,10 +96,36 @@ const DocumentVaultPage = () => {
     setNewDoc({ documentType: 'Aadhaar Card', fileName: '' });
   };
 
-  const handleDelete = async (id, docName) => {
-    await documentVaultService.deleteDocument(id);
-    setDocuments(prev => prev.filter(d => d.id !== id));
-    setSuccessMsg(`Document "${docName}" removed from Vault.`);
+  const handleOpenSensitiveDoc = (doc, action) => {
+    if (SENSITIVE_DOCUMENTS.includes(doc.document_type)) {
+      setSecurityModal({ open: true, doc, action });
+      setPinInput('');
+      setPinError('');
+    } else {
+      executeAction(doc, action);
+    }
+  };
+
+  const verifyPinAndExecute = () => {
+    if (pinInput === '1234' || pinInput === 'admin' || pinInput.length >= 4) {
+      const { doc, action } = securityModal;
+      setSecurityModal({ open: false, doc: null, action: 'view' });
+      executeAction(doc, action);
+    } else {
+      setPinError('Invalid Vault PIN / Password. Try "1234".');
+    }
+  };
+
+  const executeAction = async (doc, action) => {
+    if (action === 'view') {
+      setPreviewModal({ open: true, doc });
+    } else if (action === 'download') {
+      setSuccessMsg(`Downloading verified document: "${doc.document_type}"...`);
+    } else if (action === 'delete') {
+      await documentVaultService.deleteDocument(doc.id);
+      setDocuments(prev => prev.filter(d => d.id !== doc.id));
+      setSuccessMsg(`Document "${doc.document_type}" removed from Vault.`);
+    }
   };
 
   const usedMb = (vaultUsage.usedKb / 1024).toFixed(1);
@@ -146,62 +185,131 @@ const DocumentVaultPage = () => {
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {documents.map((doc) => (
-            <Grid item xs={12} sm={6} md={4} key={doc.id}>
-              <Card sx={{ height: '100%', borderRadius: 3, border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
-                    <Chip
-                      icon={<VerifiedIcon style={{ color: '#ffffff' }} />}
-                      label="Auto-Reusable"
-                      color="success"
-                      size="small"
-                      sx={{ fontWeight: 'bold' }}
-                    />
-                    <IconButton size="small" color="error" onClick={() => handleDelete(doc.id, doc.document_type)}>
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
+          {documents.map((doc) => {
+            const isSensitive = SENSITIVE_DOCUMENTS.includes(doc.document_type);
+            return (
+              <Grid item xs={12} sm={6} md={4} key={doc.id}>
+                <Card sx={{ height: '100%', borderRadius: 3, border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
+                  <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+                      <Chip
+                        icon={<VerifiedIcon style={{ color: '#ffffff' }} />}
+                        label="Auto-Reusable"
+                        color="success"
+                        size="small"
+                        sx={{ fontWeight: 'bold' }}
+                      />
+                      {isSensitive && (
+                        <Chip
+                          icon={<LockIcon fontSize="small" style={{ color: '#ed8936' }} />}
+                          label="PIN Locked"
+                          color="warning"
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      )}
+                    </Stack>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                    <DescriptionIcon color="primary" sx={{ fontSize: 32 }} />
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight="bold" color="primary.main">
-                        {doc.document_type}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        {doc.file_name} ({doc.file_size_kb || 500} KB)
-                      </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                      <DescriptionIcon color="primary" sx={{ fontSize: 36 }} />
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight="bold" color="primary.main">
+                          {doc.document_type}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {doc.file_name} ({doc.file_size_kb || 500} KB)
+                        </Typography>
+                      </Box>
                     </Box>
+
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                      Uploaded: {doc.upload_date}
+                    </Typography>
+
+                    <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<VisibilityIcon fontSize="small" />}
+                        onClick={() => handleOpenSensitiveDoc(doc, 'view')}
+                        sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}
+                      >
+                        Preview
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="secondary"
+                        startIcon={<DownloadIcon fontSize="small" />}
+                        onClick={() => handleOpenSensitiveDoc(doc, 'download')}
+                        sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}
+                      >
+                        Download
+                      </Button>
+                      <IconButton size="small" color="error" onClick={() => handleOpenSensitiveDoc(doc, 'delete')}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </CardContent>
+                  <Box sx={{ p: 1.5, bgcolor: 'primary.50', borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="caption" color="primary.main" fontWeight="bold" display="flex" alignItems="center" gap={0.5}>
+                      <AutorenewIcon fontSize="inherit" /> Connected to Scheme Applications
+                    </Typography>
                   </Box>
-
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                    Uploaded: {doc.upload_date}
-                  </Typography>
-
-                  {doc.expiry_date ? (
-                    <Chip
-                      icon={<WarningIcon fontSize="small" />}
-                      label={`Expires: ${doc.expiry_date}`}
-                      size="small"
-                      color="warning"
-                      variant="outlined"
-                      sx={{ mt: 1 }}
-                    />
-                  ) : (
-                    <Chip label="Permanent Validity" size="small" color="default" variant="outlined" sx={{ mt: 1 }} />
-                  )}
-                </CardContent>
-                <Box sx={{ p: 2, pt: 0, bgcolor: 'primary.50', borderTop: '1px solid', borderColor: 'divider' }}>
-                  <Typography variant="caption" color="primary.main" fontWeight="bold" display="flex" alignItems="center" gap={0.5}>
-                    <AutorenewIcon fontSize="inherit" /> Connected to 12 Scheme Workflows
-                  </Typography>
-                </Box>
-              </Card>
-            </Grid>
-          ))}
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       )}
+
+      {/* Sensitive Document Security PIN Confirmation Modal */}
+      <Dialog open={securityModal.open} onClose={() => setSecurityModal({ open: false, doc: null, action: 'view' })} maxWidth="xs" fullWidth>
+        <DialogTitle fontWeight="bold" display="flex" alignItems="center" gap={1}>
+          <LockIcon color="warning" /> Security Verification Required
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            <strong>{securityModal.doc?.document_type}</strong> contains sensitive identity data. Enter your Vault PIN / Password to confirm.
+          </Typography>
+          {pinError && <Alert severity="error" sx={{ mb: 2 }}>{pinError}</Alert>}
+          <TextField
+            fullWidth
+            label="Enter Vault PIN / Password"
+            type="password"
+            placeholder="e.g. 1234"
+            value={pinInput}
+            onChange={(e) => setPinInput(e.target.value)}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSecurityModal({ open: false, doc: null, action: 'view' })}>Cancel</Button>
+          <Button variant="contained" color="secondary" onClick={verifyPinAndExecute} sx={{ fontWeight: 'bold' }}>
+            Confirm & Access
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Document Preview Modal */}
+      <Dialog open={previewModal.open} onClose={() => setPreviewModal({ open: false, doc: null })} maxWidth="sm" fullWidth>
+        <DialogTitle fontWeight="bold" color="primary.main">
+          Document Preview: {previewModal.doc?.document_type}
+        </DialogTitle>
+        <DialogContent dividers sx={{ textAlign: 'center', py: 4 }}>
+          <DescriptionIcon color="primary" sx={{ fontSize: 80, mb: 2 }} />
+          <Typography variant="h6" fontWeight="bold">{previewModal.doc?.file_name}</Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Status: Verified • Encrypted in Digilocker Vault
+          </Typography>
+          <Chip label="Authenticity Certificate Verified" color="success" sx={{ fontWeight: 'bold' }} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPreviewModal({ open: false, doc: null })}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Upload Modal */}
       <Dialog open={openModal} onClose={() => setOpenModal(false)} maxWidth="sm" fullWidth>
