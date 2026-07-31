@@ -3,27 +3,48 @@ import { ROLES, PERMISSIONS, DEFAULT_USERS } from '../constants/roles';
 
 export const useAuthStore = create((set, get) => ({
   isAuthenticated: true,
+  token: localStorage.getItem('token') || null,
   user: {
     ...DEFAULT_USERS.citizen,
-    profileCompletion: 85, // 85% complete by default for demo citizen
-    isProfileComplete: false // Needs 100% to submit applications
+    profileCompletion: 85,
+    isProfileComplete: false
   },
   role: ROLES.CITIZEN,
 
-  login: (userData) => {
-    const roleKey = userData?.role?.toLowerCase() || ROLES.CITIZEN;
+  login: (tokenOrData, userData) => {
+    let token = null;
+    let userObj = null;
+
+    if (typeof tokenOrData === 'string') {
+      token = tokenOrData;
+      userObj = userData;
+    } else {
+      userObj = tokenOrData;
+      token = 'mock_jwt_token_' + Date.now();
+    }
+
+    const roleKey = (userObj?.role || 'citizen').toLowerCase();
+    
+    if (token) {
+      localStorage.setItem('token', token);
+    }
+
     set({
       isAuthenticated: true,
+      token: token || 'mock_jwt_token',
       user: {
-        ...(DEFAULT_USERS[roleKey] || userData),
-        profileCompletion: roleKey === ROLES.CITIZEN ? 85 : 100,
-        isProfileComplete: roleKey !== ROLES.CITIZEN
+        ...(DEFAULT_USERS[roleKey] || userObj),
+        profileCompletion: roleKey === ROLES.CITIZEN ? (userObj?.profileCompletion || 85) : 100,
+        isProfileComplete: roleKey !== ROLES.CITIZEN || (userObj?.profileCompletion === 100)
       },
       role: roleKey
     });
   },
 
-  logout: () => set({ isAuthenticated: false, user: null, role: null }),
+  logout: () => {
+    localStorage.removeItem('token');
+    set({ isAuthenticated: false, token: null, user: null, role: null });
+  },
 
   switchRole: (targetRole) => {
     const roleKey = targetRole.toLowerCase();
@@ -31,8 +52,13 @@ export const useAuthStore = create((set, get) => ({
       ...get().user,
       role: roleKey
     };
+    
+    const mockToken = `jwt_token_${roleKey}_` + Date.now();
+    localStorage.setItem('token', mockToken);
+
     set({
       isAuthenticated: true,
+      token: mockToken,
       user: {
         ...newUser,
         profileCompletion: roleKey === ROLES.CITIZEN ? (get().user?.profileCompletion || 85) : 100,

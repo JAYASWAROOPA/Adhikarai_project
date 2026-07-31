@@ -14,12 +14,21 @@ async function apiFetch(endpoint, options = {}) {
       ...options,
       headers
     });
+
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login?expired=true';
+      }
+      throw new Error('401 Unauthorized: Session expired or invalid token');
+    }
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return await response.json();
   } catch (error) {
-    console.warn(`Backend API unavailable at ${endpoint}, using mock fallback:`, error.message);
+    console.warn(`Backend API call at ${endpoint}:`, error.message);
     return null;
   }
 }
