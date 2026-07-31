@@ -12,6 +12,8 @@ const autoFillRoutes = require('./routes/autoFillRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 const officeRoutes = require('./routes/officeRoutes');
 const assistantRoutes = require('./routes/assistantRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const officerRoutes = require('./routes/officerRoutes');
 
 const app = express();
 
@@ -38,12 +40,14 @@ app.use('/api/application', autoFillRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/offices', officeRoutes);
 app.use('/api/assistant', assistantRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/officer', officerRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'UP',
-    message: 'ADHIKARAI Production API is active with JWT Auth, RBAC Security, AI Assistant & Smart Vault',
+    message: 'ADHIKARAI Production API is active with RBAC Roles, AI Eligibility Engine, Admin & Nodal Officer Portals',
     timestamp: new Date().toISOString()
   });
 });

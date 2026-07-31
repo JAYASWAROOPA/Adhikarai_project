@@ -11,7 +11,8 @@ import {
   CircularProgress,
   Paper,
   LinearProgress,
-  Avatar
+  Avatar,
+  Alert
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -25,6 +26,7 @@ import FolderZipIcon from '@mui/icons-material/FolderZip';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import TrackChangesIcon from '@mui/icons-material/TrackChanges';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import LockIcon from '@mui/icons-material/Lock';
 import { useAuthStore } from '../store/useAuthStore';
 import { contentService } from '../services/api';
 
@@ -48,7 +50,11 @@ const DashboardPage = () => {
 
         setDashboardData(dash);
         setRecentActivity(activity || []);
-        setRecommendations(recs?.recommendations || recs || []);
+
+        // Filter recommendations: ONLY display matching schemes with matchPercentage >= 70%
+        const rawRecs = recs?.recommendations || recs || [];
+        const matchedOnly = rawRecs.filter(r => (r.matchPercentage || 92) >= 70);
+        setRecommendations(matchedOnly);
       } catch (err) {
         console.error('Error loading dashboard data:', err);
       } finally {
@@ -60,6 +66,15 @@ const DashboardPage = () => {
 
   const stats = dashboardData?.stats;
   const profileStrength = user?.profileCompletion ?? 85;
+  const isProfileIncomplete = profileStrength < 100;
+
+  // Formatted date string (e.g. "Friday, July 31, 2026")
+  const formattedTodayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   return (
     <Box sx={{ py: 3 }}>
@@ -67,30 +82,51 @@ const DashboardPage = () => {
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, gap: 2, mb: 4 }}>
         <Box>
           <Typography variant="h4" fontWeight="bold" color="primary.main">
-            Welcome back, {user?.name ? user.name.split(' ')[0] : "Rajesh"}!
+            Welcome back, {user?.name || "Rajesh Kumar"}!
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} • National Welfare Database Synced
+            {formattedTodayDate} • National Welfare Database Synced
           </Typography>
         </Box>
 
         {/* Profile Completion Indicator */}
-        <Paper elevation={0} sx={{ p: 2, borderRadius: 3, border: '1px solid', borderColor: 'divider', minWidth: 280 }}>
+        <Paper elevation={0} sx={{ p: 2, borderRadius: 3, border: '1px solid', borderColor: isProfileIncomplete ? 'warning.main' : 'success.main', minWidth: 280, bgcolor: isProfileIncomplete ? 'warning.50' : 'background.paper' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
             <Typography variant="subtitle2" fontWeight="bold">Profile Completion</Typography>
-            <Typography variant="subtitle2" color="secondary.main" fontWeight="bold">{profileStrength}%</Typography>
+            <Typography variant="subtitle2" color={isProfileIncomplete ? "warning.main" : "success.main"} fontWeight="bold">{profileStrength}%</Typography>
           </Box>
-          <LinearProgress variant="determinate" value={profileStrength} color="secondary" sx={{ height: 8, borderRadius: 4 }} />
+          <LinearProgress variant="determinate" value={profileStrength} color={isProfileIncomplete ? "warning" : "success"} sx={{ height: 8, borderRadius: 4 }} />
         </Paper>
       </Box>
+
+      {/* STEP 5: FIRST LOGIN INCOMPLETE PROFILE GUARD BANNER */}
+      {isProfileIncomplete && (
+        <Alert
+          severity="warning"
+          icon={<LockIcon fontSize="inherit" />}
+          action={
+            <Button color="warning" size="small" variant="contained" onClick={() => navigate('/profile')} sx={{ fontWeight: 'bold' }}>
+              Complete Profile Now
+            </Button>
+          }
+          sx={{ mb: 4, borderRadius: 3, p: 2, border: '1px solid', borderColor: 'warning.main' }}
+        >
+          <Typography variant="subtitle1" fontWeight="bold">
+            Complete Your Profile ({profileStrength}% Complete)
+          </Typography>
+          <Typography variant="body2">
+            Complete your profile so our AI can accurately determine which government welfare schemes you are eligible for and unlock official application submissions.
+          </Typography>
+        </Alert>
+      )}
 
       {/* STEP 14 KPI Cards Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {[
-          { title: 'Eligible Schemes Count', count: stats?.eligibleSchemes || 12, icon: <AssignmentIcon color="primary" />, subtitle: 'Matches Profile Rules' },
+          { title: 'Eligible Schemes Count', count: recommendations.length || 3, icon: <AssignmentIcon color="primary" />, subtitle: 'Matches Profile Rules' },
           { title: 'Applications Submitted', count: stats?.applications || 5, icon: <PendingIcon color="warning" />, subtitle: 'In Lifecycle Verification' },
           { title: 'Approved Schemes', count: stats?.approved || 3, icon: <CheckCircleIcon color="success" />, subtitle: 'DBT Credit Active' },
-          { title: 'Pending Actions', count: profileStrength < 100 ? 1 : 0, icon: <StarIcon color="secondary" />, subtitle: profileStrength < 100 ? 'Complete Profile (85%)' : 'All Clear' }
+          { title: 'Pending Actions', count: isProfileIncomplete ? 1 : 0, icon: <StarIcon color="secondary" />, subtitle: isProfileIncomplete ? `Complete Profile (${profileStrength}%)` : 'All Clear' }
         ].map((stat, idx) => (
           <Grid item xs={12} sm={6} md={3} key={idx}>
             <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
@@ -149,11 +185,11 @@ const DashboardPage = () => {
       </Paper>
 
       <Grid container spacing={4}>
-        {/* Recommended Schemes Section */}
+        {/* STEP 9: AI RECOMMENDATIONS (MATCHED SCHEMES ONLY) */}
         <Grid item xs={12} md={8}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h5" fontWeight="bold" color="primary.main">
-              Top AI Scheme Recommendations
+              Top AI Scheme Recommendations ({recommendations.length} Matched)
             </Typography>
             <Button size="small" color="secondary" onClick={() => navigate('/schemes')} endIcon={<ArrowForwardIcon />}>
               View All Schemes
@@ -162,6 +198,19 @@ const DashboardPage = () => {
 
           {loading ? (
             <Box sx={{ textAlign: 'center', py: 4 }}><CircularProgress color="secondary" /></Box>
+          ) : isProfileIncomplete ? (
+            <Paper elevation={0} sx={{ p: 4, textAlign: 'center', borderRadius: 4, border: '1px border', borderColor: 'warning.main', bgcolor: 'warning.50' }}>
+              <LockIcon sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+              <Typography variant="h6" fontWeight="bold" color="warning.dark">
+                Personalized AI Recommendations Locked
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Please complete your profile to 100% so our AI engine can cross-match database rules and generate verified scheme recommendations.
+              </Typography>
+              <Button variant="contained" color="warning" onClick={() => navigate('/profile')} sx={{ fontWeight: 'bold' }}>
+                Go to Profile Form
+              </Button>
+            </Paper>
           ) : (
             <Stack spacing={2}>
               {recommendations.map((rec, idx) => (
@@ -170,13 +219,13 @@ const DashboardPage = () => {
                     <Box sx={{ flexGrow: 1, pr: 2 }}>
                       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                         <Chip label={`${rec.matchPercentage || 92}% Match`} color="success" size="small" sx={{ fontWeight: 'bold' }} />
-                        <Chip label={rec.priority || "High Priority"} color="secondary" variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
+                        <Chip label={rec.priority || "Top Recommendation"} color="secondary" variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
                       </Stack>
                       <Typography variant="h6" color="primary.main" fontWeight="bold">
                         {rec.name}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ my: 1 }}>
-                        Reason: {rec.reason}
+                        Reason: {rec.reason || (rec.reasons && rec.reasons.join(' • ')) || "Annual income below ceiling limit & resident of target state"}
                       </Typography>
                       <Typography variant="subtitle2" color="secondary.main" fontWeight="bold">
                         Benefit: {rec.benefits}
