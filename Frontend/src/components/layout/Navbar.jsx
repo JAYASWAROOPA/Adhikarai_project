@@ -117,13 +117,6 @@ const Navbar = () => {
 
             {isAuthenticated ? (
               <Stack direction="row" spacing={1.5} alignItems="center" sx={{ ml: 2 }}>
-                <Chip
-                  avatar={user?.avatar ? <Avatar src={user.avatar} /> : undefined}
-                  label={`${user?.name ? user.name.split(' ')[0] : 'User'} (${role?.toUpperCase()})`}
-                  size="small"
-                  color={role === 'admin' ? 'error' : role === 'officer' ? 'secondary' : 'default'}
-                  sx={{ color: '#fff', fontWeight: 'bold' }}
-                />
                 <Button
                   variant="contained"
                   color="secondary"
@@ -131,6 +124,17 @@ const Navbar = () => {
                   sx={{ fontWeight: 'bold', borderRadius: 2 }}
                 >
                   My Portal
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => {
+                    useAuthStore.getState().logout();
+                    navigate('/login');
+                  }}
+                  sx={{ borderColor: 'rgba(255,255,255,0.5)', fontWeight: 'bold', borderRadius: 2 }}
+                >
+                  Logout
                 </Button>
               </Stack>
             ) : (
