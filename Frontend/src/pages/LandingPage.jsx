@@ -156,7 +156,7 @@ const LandingPage = () => {
                   variant="contained"
                   color="secondary"
                   size="large"
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate('/login')}
                   endIcon={<ArrowForwardIcon />}
                   sx={{ py: 1.5, px: 4, fontSize: '1.05rem', fontWeight: 800, borderRadius: 3 }}
                 >

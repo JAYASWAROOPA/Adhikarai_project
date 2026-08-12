@@ -2,14 +2,14 @@ import { create } from 'zustand';
 import { ROLES, PERMISSIONS, DEFAULT_USERS } from '../constants/roles';
 
 export const useAuthStore = create((set, get) => ({
-  isAuthenticated: true,
+  isAuthenticated: !!localStorage.getItem('token'),
   token: localStorage.getItem('token') || null,
-  user: {
+  user: localStorage.getItem('token') ? {
     ...DEFAULT_USERS.citizen,
     profileCompletion: 85,
     isProfileComplete: false
-  },
-  role: ROLES.CITIZEN,
+  } : null,
+  role: localStorage.getItem('token') ? ROLES.CITIZEN : null,
 
   login: (tokenOrData, userData) => {
     let token = null;
