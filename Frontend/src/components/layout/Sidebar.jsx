@@ -135,40 +135,7 @@ const Sidebar = () => {
         ))}
       </List>
 
-      <Divider />
 
-      {/* Role Switcher Widget for Testing */}
-      <Box sx={{ p: 2, bgcolor: 'background.default', textAlign: 'center' }}>
-        <Typography variant="caption" color="text.secondary" fontWeight="bold" display="block" sx={{ mb: 1 }}>
-          <SwapHorizIcon fontSize="inherit" sx={{ mr: 0.5 }} />
-          ROLE SWITCHER (DEMO)
-        </Typography>
-        <ButtonGroup size="small" fullWidth variant="outlined" color="primary">
-          <Button
-            variant={role === ROLES.CITIZEN ? 'contained' : 'outlined'}
-            onClick={() => handleRoleSwitch(ROLES.CITIZEN)}
-            sx={{ fontSize: '0.65rem' }}
-          >
-            Citizen
-          </Button>
-          <Button
-            variant={role === ROLES.OFFICER ? 'contained' : 'outlined'}
-            color="secondary"
-            onClick={() => handleRoleSwitch(ROLES.OFFICER)}
-            sx={{ fontSize: '0.65rem' }}
-          >
-            Officer
-          </Button>
-          <Button
-            variant={role === ROLES.ADMIN ? 'contained' : 'outlined'}
-            color="error"
-            onClick={() => handleRoleSwitch(ROLES.ADMIN)}
-            sx={{ fontSize: '0.65rem' }}
-          >
-            Admin
-          </Button>
-        </ButtonGroup>
-      </Box>
 
       <Divider />
       <List>
