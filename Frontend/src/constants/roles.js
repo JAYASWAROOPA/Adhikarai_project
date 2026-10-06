@@ -85,6 +85,9 @@ export const DEFAULT_USERS = {
     lastName: 'Kumar',
     role: 'citizen',
     aadhar: '9876-5432-1098',
-    phone: '+91-7654321098'
+    phone: '+91-7654321098',
+    wallet: 24500,
+    profileCompletion: 100,
+    isProfileComplete: true
   }
 };

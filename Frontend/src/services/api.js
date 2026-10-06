@@ -1,5 +1,10 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
+const isDemoToken = (token) => {
+  if (!token) return false;
+  return token.startsWith('mock_jwt_token_') || token === 'mock_jwt_token' || token.startsWith('jwt_token_');
+};
+
 // Helper for making API calls with fallback to mock data if backend server is unreachable
 async function apiFetch(endpoint, options = {}) {
   const token = localStorage.getItem('token');
@@ -16,9 +21,11 @@ async function apiFetch(endpoint, options = {}) {
     });
 
     if (response.status === 401) {
-      localStorage.removeItem('token');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login?expired=true';
+      if (!isDemoToken(token)) {
+        localStorage.removeItem('token');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login?expired=true';
+        }
       }
       throw new Error('401 Unauthorized: Session expired or invalid token');
     }
