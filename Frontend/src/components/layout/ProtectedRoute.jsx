@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Box, Alert, Button, LinearProgress, Typography, Stack, Paper } from '@mui/material';
+import { Box, Button, LinearProgress, Typography, Stack, Paper, IconButton, useMediaQuery } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import MenuIcon from '@mui/icons-material/Menu';
 import Sidebar from './Sidebar';
 
 const ProtectedRoute = ({ allowedRoles }) => {
@@ -12,6 +13,9 @@ const ProtectedRoute = ({ allowedRoles }) => {
   const role = useAuthStore((state) => state.role);
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -32,7 +36,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
   if (isIncomplete && isApplying) {
     return (
       <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
-        <Sidebar />
+        <Sidebar mobileOpen={mobileNavOpen} onClose={closeMobileNav} />
         <Box component="main" sx={{ flexGrow: 1, p: 4, bgcolor: 'background.default' }}>
           <Paper elevation={0} sx={{ p: 4, borderRadius: 4, textCenter: 'center', border: '1px solid', borderColor: 'warning.light' }}>
             <Box sx={{ textCenter: 'center', mx: 'auto', maxWidth: 500, textAlign: 'center' }}>
@@ -66,8 +70,9 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
-      <Sidebar />
-      <Box component="main" sx={{ flexGrow: 1, p: 3, bgcolor: 'background.default' }}>
+      <Sidebar mobileOpen={mobileNavOpen} onClose={closeMobileNav} />
+      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, p: { xs: 1.5, sm: 2, md: 3 }, bgcolor: 'background.default' }}>
+        {isMobile && <Box sx={{ mb: 1 }}><IconButton aria-label="Open navigation" onClick={() => setMobileNavOpen(true)}><MenuIcon /></IconButton></Box>}
         {/* Prominent Profile Completion Alert Banner */}
         {isIncomplete && location.pathname !== '/profile' && (
           <Paper

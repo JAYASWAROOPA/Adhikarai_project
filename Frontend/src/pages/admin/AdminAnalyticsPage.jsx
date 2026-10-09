@@ -1,141 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Grid,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  CircularProgress
-} from '@mui/material';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, Box, Button, Card, CardContent, CircularProgress, Grid, LinearProgress, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { adminService } from '../../services/api';
 
-const AdminAnalyticsPage = () => {
-  const [analytics, setAnalytics] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadAnalytics() {
-      try {
-        setLoading(true);
-        const data = await adminService.getAnalytics();
-        setAnalytics(data);
-      } catch (err) {
-        console.error('Error fetching analytics:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadAnalytics();
-  }, []);
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <CircularProgress color="secondary" />
-      </Box>
-    );
-  }
-
-  const metrics = analytics?.applicationMetrics;
-
-  return (
-    <Box sx={{ py: 2 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold" color="primary.main">
-          System Advanced Analytics Dashboard
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Real-time application trends, departmental scheme metrics, demographic distribution, and officer throughput
-        </Typography>
-      </Box>
-
-      {/* KPI Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {[
-          { label: 'Total Applications', val: metrics?.total?.toLocaleString() || '8,472', color: 'primary.main' },
-          { label: 'Approved Claims', val: metrics?.approved?.toLocaleString() || '5,432', color: 'success.main' },
-          { label: 'Rejections', val: metrics?.rejected?.toLocaleString() || '1,543', color: 'error.main' },
-          { label: 'Overall Approval Rate', val: `${metrics?.approvalRate || 64.1}%`, color: 'secondary.main' }
-        ].map((item, idx) => (
-          <Grid item xs={12} sm={6} md={3} key={idx}>
-            <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-              <CardContent sx={{ p: 2.5 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight="bold">{item.label}</Typography>
-                <Typography variant="h4" fontWeight="bold" sx={{ color: item.color, mt: 1 }}>{item.val}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Scheme Performance Table */}
-      <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom>
-          Scheme Performance Breakdown
-        </Typography>
-        <TableContainer>
-          <Table size="small">
-            <TableHead sx={{ bgcolor: 'primary.50' }}>
-              <TableRow>
-                <TableCell fontWeight="bold">Scheme Name</TableCell>
-                <TableCell fontWeight="bold">Applications Received</TableCell>
-                <TableCell fontWeight="bold">Approval Rate</TableCell>
-                <TableCell fontWeight="bold">Avg Processing Time</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {analytics?.schemePerformance?.map((sp, idx) => (
-                <TableRow key={idx}>
-                  <TableCell fontWeight="bold">{sp.schemeName}</TableCell>
-                  <TableCell>{sp.applications.toLocaleString()}</TableCell>
-                  <TableCell><Chip label={`${sp.approvalRate}%`} color="success" size="small" /></TableCell>
-                  <TableCell>{sp.avgTime}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-
-      {/* Officer Performance Table */}
-      <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h6" fontWeight="bold" color="primary.main" gutterBottom>
-          Nodal Officer Performance & Turnaround Time
-        </Typography>
-        <TableContainer>
-          <Table size="small">
-            <TableHead sx={{ bgcolor: 'primary.50' }}>
-              <TableRow>
-                <TableCell fontWeight="bold">Officer Name</TableCell>
-                <TableCell fontWeight="bold">Total Verifications</TableCell>
-                <TableCell fontWeight="bold">Average Verification Speed</TableCell>
-                <TableCell fontWeight="bold">Approval Percentage</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {analytics?.officerPerformance?.map((op, idx) => (
-                <TableRow key={idx}>
-                  <TableCell fontWeight="bold">{op.officerName}</TableCell>
-                  <TableCell>{op.verifications}</TableCell>
-                  <TableCell>{op.averageTime}</TableCell>
-                  <TableCell><Chip label={`${op.approvalRate}%`} color="secondary" size="small" /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-    </Box>
-  );
-};
-
-export default AdminAnalyticsPage;
+export default function AdminAnalyticsPage() {
+  const [data,setData]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
+  const load=useCallback(async()=>{setLoading(true);setError('');try{setData(await adminService.getAnalytics());}catch(e){setError(e.message);}finally{setLoading(false);}},[]);
+  useEffect(()=>{load();},[load]);
+  if(loading)return <Box sx={{py:8,textAlign:'center'}}><CircularProgress/></Box>;
+  const users=data?.userMetrics||{}, schemes=data?.schemeMetrics||{}, apps=data?.applicationMetrics||{};
+  const kpis=[['Total users',users.totalUsers],['Active users',users.activeUsers],['Total officers',users.totalOfficers],['Verified users',users.verifiedUsers],['Welfare schemes',schemes.totalSchemes],['Active schemes',schemes.activeSchemes],['Applications',apps.total],['Pending applications',apps.pending],['Approved applications',apps.approved],['Rejected applications',apps.rejected],['Approval rate',`${apps.approvalRate||0}%`]];
+  return <Box sx={{py:2}}><Typography variant="h4" fontWeight={700} color="primary.main">System Analytics</Typography><Typography color="text.secondary" sx={{mb:3}}>Metrics are calculated from the registered users, schemes, applications, and audit database.</Typography>{error&&<Alert severity="error" action={<Button color="inherit" onClick={load}>Retry</Button>} sx={{mb:2}}>{error}</Alert>}
+    <Grid container spacing={2} sx={{mb:3}}>{kpis.map(([label,value])=><Grid item xs={6} md={3} key={label}><Card variant="outlined"><CardContent><Typography variant="body2" color="text.secondary">{label}</Typography><Typography variant="h4" fontWeight={700}>{value ?? '—'}</Typography></CardContent></Card></Grid>)}</Grid>
+    <Paper sx={{p:2,mb:3}}><Typography variant="h6" fontWeight={700} sx={{mb:2}}>Application trend (last 90 days)</Typography>{data?.trends?.length ? data.trends.map(t=><Box key={t.date} sx={{display:'grid',gridTemplateColumns:'100px 1fr 60px',gap:1,alignItems:'center',mb:.75}}><Typography variant="caption">{new Date(t.date).toLocaleDateString()}</Typography><LinearProgress variant="determinate" value={Math.min(100,(Number(t.applications)/Math.max(...data.trends.map(x=>Number(x.applications)),1))*100)} sx={{height:9,borderRadius:4}}/><Typography variant="caption">{t.applications}</Typography></Box>) : <Typography color="text.secondary">No application trend data available.</Typography>}</Paper>
+    <Paper sx={{p:2,mb:3,overflowX:'auto'}}><Typography variant="h6" fontWeight={700} sx={{mb:1}}>Scheme performance</Typography><Table size="small"><TableHead><TableRow>{['Scheme','Applications','Approved','Rejected','Pending','Approval rate'].map(x=><TableCell key={x} sx={{fontWeight:700}}>{x}</TableCell>)}</TableRow></TableHead><TableBody>{data?.schemePerformance?.map(s=><TableRow key={s.id}><TableCell>{s.schemeName}</TableCell><TableCell>{s.applications}</TableCell><TableCell>{s.approved||0}</TableCell><TableCell>{s.rejected||0}</TableCell><TableCell>{s.pending||0}</TableCell><TableCell>{s.approvalRate}%</TableCell></TableRow>)}</TableBody></Table>{!data?.schemePerformance?.length&&<Typography sx={{p:2}} color="text.secondary">No scheme application data available.</Typography>}</Paper>
+    <Paper sx={{p:2,overflowX:'auto'}}><Typography variant="h6" fontWeight={700} sx={{mb:1}}>Officer workload</Typography><Table size="small"><TableHead><TableRow>{['Officer','Assigned applications','Processed','Approved'].map(x=><TableCell key={x} sx={{fontWeight:700}}>{x}</TableCell>)}</TableRow></TableHead><TableBody>{data?.officerPerformance?.map(o=><TableRow key={o.id}><TableCell>{o.officerName}</TableCell><TableCell>{o.assigned||0}</TableCell><TableCell>{o.processed||0}</TableCell><TableCell>{o.approved||0}</TableCell></TableRow>)}</TableBody></Table>{!data?.officerPerformance?.length&&<Typography sx={{p:2}} color="text.secondary">No officer performance data available.</Typography>}</Paper>
+  </Box>;
+}

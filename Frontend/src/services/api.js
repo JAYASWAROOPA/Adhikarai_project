@@ -35,10 +35,23 @@ async function apiFetch(endpoint, options = {}) {
     }
     return await response.json();
   } catch (error) {
-    console.warn(`Backend API call at ${endpoint}:`, error.message);
+    console.warn('Backend API request failed:', error.message);
     return null;
   }
 }
+
+export const authService = {
+  login: async (identifier, password) => {
+    const data = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ identifier, password })
+    });
+    if (!data?.success || !data.token || !data.user) {
+      throw new Error(data?.message || 'Unable to sign in. Check the API server and your credentials.');
+    }
+    return data;
+  }
+};
 
 // 📊 1. Centralized Citizen Content Service
 export const contentService = {
@@ -524,286 +537,79 @@ export const contentService = {
 };
 
 // 🏛️ 2. Admin API Service
-export const adminService = {
-  getDashboard: async () => {
-    const data = await apiFetch('/admin/dashboard');
-    return data || {
-      stats: {
-        totalUsers: 15243,
-        totalOfficers: 342,
-        totalApplications: 8472,
-        pendingVerifications: 1243,
-        approvedSchemes: 45,
-        activeCitizens: 12345
-      },
-      charts: {
-        applicationsTrend: [
-          { month: 'Jan', count: 650 },
-          { month: 'Feb', count: 890 },
-          { month: 'Mar', count: 1200 },
-          { month: 'Apr', count: 1450 },
-          { month: 'May', count: 1800 },
-          { month: 'Jun', count: 2100 }
-        ],
-        schemesByDepartment: [
-          { department: 'Ministry of Housing', count: 12 },
-          { department: 'Ministry of Agriculture', count: 18 },
-          { department: 'Ministry of Health', count: 15 },
-          { department: 'Social Justice', count: 22 }
-        ],
-        verificationStatus: [
-          { name: 'Approved', value: 5432, color: '#48bb78' },
-          { name: 'Pending', value: 1497, color: '#ed8936' },
-          { name: 'Rejected', value: 1543, color: '#fc8181' }
-        ]
-      },
-      recentActivities: [
-        {
-          id: 1,
-          user: "Dr. Ananya Sharma (Admin)",
-          action: "Verified Nodal Officer: Vikram Singh (Mumbai District)",
-          timestamp: "10 mins ago",
-          type: "admin_action"
-        },
-        {
-          id: 2,
-          user: "System AI Engine",
-          action: "Re-calculated eligibility rules for PMAY scheme",
-          timestamp: "1 hour ago",
-          type: "system_event"
-        },
-        {
-          id: 3,
-          user: "Ministry of Housing",
-          action: "Published new scheme: PM Awas Urban 2.0",
-          timestamp: "3 hours ago",
-          type: "scheme_publish"
-        }
-      ],
-      alerts: [
-        { id: 1, type: "warning", message: "12 applications pending for over 7 days in District Thane", priority: "high" },
-        { id: 2, type: "info", message: "System backup completed successfully", priority: "low" }
-      ]
-    };
-  },
+async function adminFetch(endpoint, options = {}) {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers
+    }
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login?expired=true';
+    }
+    throw new Error(result.message || `Admin request failed (${response.status})`);
+  }
+  return result;
+}
 
-  getUsers: async () => {
-    const data = await apiFetch('/admin/users');
-    return data || [
-      { id: 1, name: 'Dr. Ananya Sharma', email: 'admin@adhikarai.gov.in', role: 'admin', status: 'active', department: 'Ministry of IT', joined: '2024-01-10', applications: 0 },
-      { id: 2, name: 'Vikram Singh', email: 'officer@adhikarai.gov.in', role: 'officer', status: 'active', department: 'Ministry of Housing', joined: '2024-02-15', applications: 342 },
-      { id: 3, name: 'Rajesh Kumar', email: 'citizen@adhikarai.gov.in', role: 'citizen', status: 'active', department: 'N/A', joined: '2024-03-01', applications: 5 },
-      { id: 4, name: 'Sunita Devi', email: 'sunita@gmail.com', role: 'citizen', status: 'active', department: 'N/A', joined: '2024-04-12', applications: 2 },
-      { id: 5, name: 'Amit Patel', email: 'officer.patel@adhikarai.gov.in', role: 'officer', status: 'pending', department: 'Ministry of Agriculture', joined: '2026-07-20', applications: 45 }
-    ];
-  },
+export const adminService = {
+  getDashboard: () => adminFetch('/admin/dashboard'),
+  getUsers: (params = {}) => adminFetch(`/admin/users?${new URLSearchParams(params)}`),
 
   updateUser: async (id, userData) => {
-    const data = await apiFetch(`/admin/users/${id}`, {
+    return adminFetch(`/admin/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData)
     });
-    return data || { success: true, message: "User updated successfully!" };
   },
-
-  getOfficers: async () => {
-    const data = await apiFetch('/admin/officers');
-    return data || [
-      {
-        id: 202,
-        name: 'Mr. Vikram Singh',
-        email: 'officer@adhikarai.gov.in',
-        employeeId: 'OFF-2024-001',
-        designation: 'District Welfare Officer',
-        department: 'Ministry of Housing',
-        jurisdiction: 'Mumbai District',
-        verificationLimit: 50,
-        completedVerifications: 342,
-        specialization: ['Housing', 'Education'],
-        status: 'active'
-      },
-      {
-        id: 203,
-        name: 'Ms. Priya Rane',
-        email: 'priya.rane@adhikarai.gov.in',
-        employeeId: 'OFF-2024-088',
-        designation: 'Sub-Divisional Officer',
-        department: 'Ministry of Agriculture',
-        jurisdiction: 'Pune District',
-        verificationLimit: 75,
-        completedVerifications: 198,
-        specialization: ['Agriculture', 'Health'],
-        status: 'active'
-      }
-    ];
-  },
+  getOfficers: (params = {}) => adminFetch(`/admin/officers?${new URLSearchParams(params)}`),
 
   createOfficer: async (officerData) => {
-    const data = await apiFetch('/admin/officers', {
+    return adminFetch('/admin/officers', {
       method: 'POST',
       body: JSON.stringify(officerData)
     });
-    return data || { success: true, message: "Officer account created & verified successfully!" };
   },
-
-  saveScheme: async (schemeData) => {
-    const data = await apiFetch('/admin/schemes', {
-      method: 'POST',
+  getSchemes: (params = {}) => adminFetch(`/admin/schemes?${new URLSearchParams(params)}`),
+  saveScheme: (schemeData, id) => adminFetch(id ? `/admin/schemes/${id}` : '/admin/schemes', {
+      method: id ? 'PUT' : 'POST',
       body: JSON.stringify(schemeData)
-    });
-    return data || { success: true, message: "Scheme saved and published successfully!" };
-  },
-
-  getAnalytics: async () => {
-    const data = await apiFetch('/admin/analytics');
-    return data || {
-      applicationMetrics: {
-        total: 8472,
-        approved: 5432,
-        rejected: 1543,
-        pending: 1497,
-        approvalRate: 64.1,
-        averageTime: "12.3 days"
-      },
-      schemePerformance: [
-        { schemeName: "Pradhan Mantri Awas Yojana", applications: 2345, approvalRate: 78.5, avgTime: "8.2 days" },
-        { schemeName: "PM-KISAN Samman Nidhi", applications: 3120, approvalRate: 85.0, avgTime: "5.1 days" },
-        { schemeName: "Ayushman Bharat PM-JAY", applications: 3007, approvalRate: 72.4, avgTime: "9.4 days" }
-      ],
-      userDemographics: {
-        ageGroups: { "18-25": 20, "26-35": 35, "36-50": 30, "50+": 15 },
-        states: { "Maharashtra": 30, "Gujarat": 20, "Tamil Nadu": 25, "Others": 25 },
-        incomeGroups: { "BPL": 25, "Low": 40, "Middle": 30, "High": 5 }
-      },
-      officerPerformance: [
-        { officerName: "Vikram Singh", verifications: 342, averageTime: "3.2 days", approvalRate: 82.5 },
-        { officerName: "Priya Rane", verifications: 198, averageTime: "4.1 days", approvalRate: 79.0 }
-      ]
-    };
-  },
-
-  getAuditLogs: async () => {
-    const data = await apiFetch('/admin/audit-logs');
-    return data || [
-      {
-        id: 1,
-        timestamp: new Date().toISOString(),
-        userId: 101,
-        userName: "Dr. Ananya Sharma",
-        role: "admin",
-        action: "USER_ROLE_CHANGE",
-        details: JSON.stringify({ targetUser: "Vikram Singh", oldRole: "citizen", newRole: "officer" }),
-        ipAddress: "192.168.1.100"
-      },
-      {
-        id: 2,
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        userId: 202,
-        userName: "Vikram Singh",
-        role: "officer",
-        action: "APPLICATION_APPROVED",
-        details: JSON.stringify({ applicationId: "APP-2026-001", scheme: "PMAY", citizen: "Rajesh Kumar" }),
-        ipAddress: "192.168.1.105"
-      },
-      {
-        id: 3,
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        userId: 101,
-        userName: "Dr. Ananya Sharma",
-        role: "admin",
-        action: "SCHEME_UPDATE",
-        details: JSON.stringify({ schemeId: 1, name: "PMAY", updatedField: "incomeLimit" }),
-        ipAddress: "192.168.1.100"
-      }
-    ];
-  }
+  }),
+  updateSchemeStatus: (id, status) => adminFetch(`/admin/schemes/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  getAnalytics: () => adminFetch('/admin/analytics'),
+  getAuditLogs: (params = {}) => adminFetch(`/admin/audit-logs?${new URLSearchParams(params)}`)
 };
 
 // 👮 3. Officer API Service
 export const officerService = {
-  getDashboard: async () => {
-    const data = await apiFetch('/officer/dashboard');
-    return data || {
-      stats: {
-        pendingVerifications: 45,
-        completedToday: 12,
-        totalVerified: 342,
-        approvalRate: 82.5,
-        averageTime: "3.2 days",
-        assignedCases: 45
-      },
-      priorityQueue: [
-        {
-          applicationId: "APP-2026-001",
-          citizenName: "Rajesh Kumar",
-          schemeName: "Pradhan Mantri Awas Yojana",
-          submittedDate: "2026-07-20",
-          priority: "high",
-          daysPending: 6,
-          documentsStatus: {
-            aadhar: "verified",
-            income: "pending",
-            address: "verified"
-          }
-        },
-        {
-          applicationId: "APP-2026-004",
-          citizenName: "Sunita Devi",
-          schemeName: "PM-KISAN Samman Nidhi",
-          submittedDate: "2026-07-22",
-          priority: "medium",
-          daysPending: 4,
-          documentsStatus: {
-            aadhar: "verified",
-            income: "verified",
-            address: "verified"
-          }
-        }
-      ],
-      recentActivity: [
-        {
-          id: 1,
-          action: "Verified & Approved PMAY Application",
-          citizen: "Rajesh Kumar",
-          timestamp: "Today, 10:30 AM",
-          status: "approved"
-        },
-        {
-          id: 2,
-          action: "Requested Income Certificate Upload",
-          citizen: "Amit Patel",
-          timestamp: "Yesterday, 3:15 PM",
-          status: "pending"
-        }
-      ]
-    };
+  getApplications: async () => {
+    const data = await apiFetch('/officer/applications');
+    if (!data?.success || !Array.isArray(data.applications)) {
+      throw new Error('Unable to load assigned applications. Check that the officer API is running and try again.');
+    }
+    return data;
   },
 
+  getDashboard: async () => officerService.getApplications(),
+
   getPendingVerifications: async () => {
-    const data = await apiFetch('/officer/applications/pending');
-    return data || [
-      {
-        applicationId: "APP-2026-001",
-        citizenId: 303,
-        citizenName: "Rajesh Kumar",
-        citizenAadhar: "9876-5432-1098",
-        citizenAge: 35,
-        citizenIncome: 450000,
-        citizenLocation: "Mumbai, Maharashtra",
-        casteCategory: "OBC",
-        schemeName: "Pradhan Mantri Awas Yojana (PMAY)",
-        appliedDate: "2026-07-20",
-        priority: "high",
-        status: "under_review",
-        documents: [
-          { name: "Aadhaar Card", status: "verified", path: "#" },
-          { name: "Income Certificate", status: "pending", path: "#" },
-          { name: "Address Proof", status: "verified", path: "#" }
-        ],
-        eligibilityRulesCheck: "PASSED (Age 35 within 18-65, Income ₹4.5L < ₹6L)",
-        notes: "Requires verification of annual income proof document."
-      }
-    ];
+    const data = await officerService.getApplications();
+    return data.applications.filter((application) => !['approved', 'verified', 'rejected'].includes(String(application.status).toLowerCase()));
+  },
+
+  updateApplicationAction: async (applicationId, action) => {
+    const data = await apiFetch(`/officer/applications/${encodeURIComponent(applicationId)}/action`, {
+      method: 'POST',
+      body: JSON.stringify(action)
+    });
+    if (!data?.success) throw new Error(data?.message || 'Unable to save the application decision. Please retry.');
+    return data;
   },
 
   getCitizenDetail: async (citizenId) => {
@@ -844,80 +650,26 @@ export const officerService = {
     };
   },
 
-  approveApplication: async (applicationId, comments) => {
-    const data = await apiFetch(`/officer/verify/${applicationId}/approve`, {
-      method: 'POST',
-      body: JSON.stringify({ comments })
-    });
-    return data || { success: true, message: `Application ${applicationId} approved successfully!` };
-  },
+  approveApplication: (applicationId, comments) => officerService.updateApplicationAction(applicationId, { status: 'VERIFIED', action: 'Verified', remarks: comments }),
 
   rejectApplication: async (applicationId, reason) => {
-    const data = await apiFetch(`/officer/verify/${applicationId}/reject`, {
-      method: 'POST',
-      body: JSON.stringify({ reason })
-    });
-    return data || { success: true, message: `Application ${applicationId} rejected with reason: ${reason}` };
+    return officerService.updateApplicationAction(applicationId, { status: 'REJECTED', action: 'Rejected', remarks: reason });
   },
 
   requestDocuments: async (applicationId, documents) => {
-    const data = await apiFetch(`/officer/verify/${applicationId}/request-documents`, {
-      method: 'POST',
-      body: JSON.stringify({ documents })
-    });
-    return data || { success: true, message: `Document request notification sent to citizen!` };
+    return officerService.updateApplicationAction(applicationId, { status: 'DOCUMENTS_MISSING', action: 'Additional documents requested', remarks: documents });
   },
 
   scheduleInterview: async (applicationId, interviewDetails) => {
-    const data = await apiFetch(`/officer/verify/${applicationId}/schedule-interview`, {
-      method: 'POST',
-      body: JSON.stringify(interviewDetails)
-    });
-    return data || { success: true, message: `Verification interview scheduled successfully!` };
+    return officerService.updateApplicationAction(applicationId, { status: 'UNDER_REVIEW', action: 'Interview scheduled', remarks: JSON.stringify(interviewDetails) });
   },
 
-  generateCertificate: async (applicationId) => {
-    const data = await apiFetch(`/officer/verify/${applicationId}/generate-certificate`, {
-      method: 'POST'
-    });
-    return data || {
-      success: true,
-      certificateNumber: `CERT-${Math.floor(100000 + Math.random() * 900000)}`,
-      certificateUrl: `#download-cert-${applicationId}`,
-      qrCodeData: `ADHIKARAI-VERIFIED-${applicationId}`
-    };
+  generateCertificate: async (_applicationId) => {
+    throw new Error('Certificate generation is not available in the officer API yet.');
   },
 
   getAnalytics: async () => {
-    const data = await apiFetch('/officer/analytics');
-    return data || {
-      performance: {
-        totalVerified: 342,
-        approved: 282,
-        rejected: 60,
-        approvalRate: 82.5,
-        averageTime: "3.2 days",
-        monthlyTarget: 50,
-        achieved: 42
-      },
-      workload: {
-        assigned: 45,
-        completed: 12,
-        pending: 33,
-        overdue: 5
-      },
-      schemeDistribution: [
-        { scheme: "Pradhan Mantri Awas Yojana", count: 120, avgTime: "2.8 days" },
-        { scheme: "PM-KISAN Samman Nidhi", count: 145, avgTime: "1.9 days" },
-        { scheme: "Ayushman Bharat PM-JAY", count: 77, avgTime: "4.1 days" }
-      ],
-      citizenFeedback: {
-        rating: 4.8,
-        totalReviews: 245,
-        positive: 235,
-        negative: 10
-      }
-    };
+    return officerService.getApplications();
   }
 };
 

@@ -8,11 +8,11 @@ import {
   ListItemText,
   Typography,
   Divider,
-  Button,
-  ButtonGroup,
-  Chip
+  Chip,
+  Badge,
+  useMediaQuery
 } from '@mui/material';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PersonIcon from '@mui/icons-material/Person';
 import PolicyIcon from '@mui/icons-material/Policy';
@@ -26,33 +26,37 @@ import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import LogoutIcon from '@mui/icons-material/Logout';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import { useEffect, useState } from 'react';
+import { officerService } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROLES } from '../../constants/roles';
 
 const drawerWidth = 260;
 
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
   const logout = useAuthStore((state) => state.logout);
-  const user = useAuthStore((state) => state.user);
   const role = useAuthStore((state) => state.role);
-  const switchRole = useAuthStore((state) => state.switchRole);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (role !== ROLES.OFFICER) return undefined;
+    let active = true;
+    officerService.getApplications().then((data) => {
+      if (active) setPendingCount(data.applications.filter((app) => !['APPROVED', 'VERIFIED', 'REJECTED'].includes(String(app.status).toUpperCase())).length);
+    }).catch(() => { if (active) setPendingCount(0); });
+    return () => { active = false; };
+  }, [role]);
+
+  useEffect(() => { if (isMobile) onClose(); }, [location.pathname, isMobile, onClose]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
-  };
-
-  const handleRoleSwitch = (targetRole) => {
-    switchRole(targetRole);
-    if (targetRole === ROLES.ADMIN) {
-      navigate('/admin');
-    } else if (targetRole === ROLES.OFFICER) {
-      navigate('/officer');
-    } else {
-      navigate('/dashboard');
-    }
   };
 
   const getNavItems = () => {
@@ -68,9 +72,14 @@ const Sidebar = () => {
     }
     if (role === ROLES.OFFICER) {
       return [
-        { label: 'Officer Dashboard', path: '/officer', icon: <DashboardIcon /> },
-        { label: 'Pending Verifications', path: '/officer/verifications', icon: <VerifiedUserIcon /> },
-        { label: 'Officer Analytics', path: '/officer/analytics', icon: <AnalyticsIcon /> }
+        { label: 'Dashboard', path: '/officer/dashboard', icon: <DashboardIcon /> },
+        { label: 'Pending Verification', path: '/officer/pending-verification', icon: <VerifiedUserIcon />, badge: pendingCount },
+        { label: 'Analytics', path: '/officer/analytics', icon: <AnalyticsIcon /> },
+        { label: 'Applications', path: '/officer/applications', icon: <AssignmentIcon /> },
+        { label: 'Schemes', path: '/officer/schemes', icon: <PolicyIcon /> },
+        { label: 'Notifications', path: '/officer/notifications', icon: <NotificationsOutlinedIcon /> },
+        { label: 'Profile', path: '/officer/profile', icon: <PersonIcon /> },
+        { label: 'Settings', path: '/officer/settings', icon: <SettingsOutlinedIcon /> }
       ];
     }
     // Default Citizen menu
@@ -87,65 +96,39 @@ const Sidebar = () => {
 
   const navItems = getNavItems();
 
-  return (
-    <Drawer
-      variant="permanent"
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
-      }}
-    >
+  const drawerContent = (
+    <>
       <Box sx={{ p: 2.5, textAlign: 'center', bgcolor: 'primary.main', color: '#fff' }}>
         <Typography variant="h6" fontWeight="bold" letterSpacing={1}>ADHIKARAI</Typography>
-        <Chip
-          label={`${role.toUpperCase()} PORTAL`}
-          size="small"
-          color={role === 'admin' ? 'error' : role === 'officer' ? 'secondary' : 'default'}
-          sx={{ mt: 0.5, fontWeight: 'bold', color: '#fff' }}
-        />
+        <Chip label={`${(role || 'citizen').toUpperCase()} PORTAL`} size="small" color={role === 'admin' ? 'error' : role === 'officer' ? 'secondary' : 'default'} sx={{ mt: 0.5, fontWeight: 'bold', color: '#fff' }} />
       </Box>
       <Divider />
-      
       <List sx={{ flexGrow: 1, py: 2 }}>
         {navItems.map((item) => (
-          <ListItem 
-            component={NavLink} 
-            to={item.path} 
-            key={item.label}
-            end={item.path === '/admin' || item.path === '/officer' || item.path === '/dashboard'}
-            sx={{
-              color: 'text.secondary',
-              textDecoration: 'none',
-              py: 1.2,
-              '&.active': {
-                bgcolor: 'primary.light',
-                color: '#fff',
-                fontWeight: 'bold',
-                '& .MuiListItemIcon-root': { color: '#fff' }
-              },
-              '&:hover': { bgcolor: 'action.hover' }
-            }}
-          >
-            <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
-              {item.icon}
-            </ListItemIcon>
+          <ListItem component={NavLink} to={item.path} key={item.label}
+            onClick={isMobile ? onClose : undefined}
+            end={['/admin', '/officer', '/officer/dashboard', '/officer/pending-verification', '/officer/applications', '/officer/schemes', '/officer/notifications', '/officer/profile', '/officer/settings', '/dashboard'].includes(item.path)}
+            sx={{ color: 'text.secondary', textDecoration: 'none', py: 1.2, '&.active': { bgcolor: 'primary.light', color: '#fff', fontWeight: 'bold', '& .MuiListItemIcon-root': { color: '#fff' } }, '&:hover': { bgcolor: 'action.hover' } }}>
+            <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>{item.icon}</ListItemIcon>
             <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: 500 }} />
+            {item.badge > 0 && <Badge badgeContent={item.badge} color="error" sx={{ mr: 2 }} />}
           </ListItem>
         ))}
       </List>
-
-
-
       <Divider />
-      <List>
-        <ListItem button onClick={handleLogout} sx={{ color: 'error.main', cursor: 'pointer' }}>
-          <ListItemIcon sx={{ color: 'error.main', minWidth: 40 }}>
-            <LogoutIcon />
-          </ListItemIcon>
-          <ListItemText primary="Logout" />
-        </ListItem>
-      </List>
+      <List><ListItem button onClick={handleLogout} sx={{ color: 'error.main', cursor: 'pointer' }}><ListItemIcon sx={{ color: 'error.main', minWidth: 40 }}><LogoutIcon /></ListItemIcon><ListItemText primary="Logout" /></ListItem></List>
+    </>
+  );
+
+  return (
+    <Drawer
+      variant={isMobile ? 'temporary' : 'permanent'}
+      open={isMobile ? mobileOpen : true}
+      onClose={onClose}
+      ModalProps={{ keepMounted: true }}
+      sx={{ width: { md: drawerWidth }, flexShrink: 0, [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' } }}
+    >
+      {drawerContent}
     </Drawer>
   );
 };

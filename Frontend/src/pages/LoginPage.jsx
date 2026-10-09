@@ -20,18 +20,17 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import SecurityIcon from '@mui/icons-material/Security';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PersonIcon from '@mui/icons-material/Person';
 import BadgeIcon from '@mui/icons-material/Badge';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { useAuthStore } from '../store/useAuthStore';
 import { DEFAULT_USERS, ROLES } from '../constants/roles';
+import { authService } from '../services/api';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const switchRole = useAuthStore((state) => state.switchRole);
 
   const [selectedRoleTab, setSelectedRoleTab] = useState('citizen');
   const [identifier, setIdentifier] = useState('citizen@adhikarai.gov.in');
@@ -39,6 +38,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
 
   const handleRoleTabChange = (event, newRole) => {
     if (!newRole) return;
@@ -50,7 +50,7 @@ const LoginPage = () => {
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -71,12 +71,19 @@ const LoginPage = () => {
       return;
     }
 
-    login(identifier, password);
-    switchRole(selectedRoleTab);
-
-    if (selectedRoleTab === 'admin') navigate('/admin');
-    else if (selectedRoleTab === 'officer') navigate('/officer');
-    else navigate('/dashboard');
+    setLoggingIn(true);
+    try {
+      const result = await authService.login(identifier, password);
+      if (result.user.role !== selectedRoleTab) {
+        throw new Error('The selected portal does not match the role returned by the authentication service.');
+      }
+      login(result.token, result.user);
+      if (result.user.role === ROLES.ADMIN) navigate('/admin');
+      else if (result.user.role === ROLES.OFFICER) navigate('/officer/dashboard');
+      else navigate('/dashboard');
+    } catch (error) {
+      setErrorMsg(error.message || 'Unable to sign in. Please try again.');
+    } finally { setLoggingIn(false); }
   };
 
   return (
@@ -177,13 +184,14 @@ const LoginPage = () => {
 
             <Button
               type="submit"
+              disabled={loggingIn}
               fullWidth
               variant="contained"
               color="secondary"
               size="large"
               sx={{ py: 1.5, fontSize: '1.05rem', fontWeight: 'bold', mb: 3 }}
             >
-              Sign In as {selectedRoleTab === 'citizen' ? 'Citizen' : selectedRoleTab === 'officer' ? 'Nodal Officer' : 'System Admin'}
+              {loggingIn ? 'Signing in…' : `Sign In as ${selectedRoleTab === 'citizen' ? 'Citizen' : selectedRoleTab === 'officer' ? 'Nodal Officer' : 'System Admin'}`}
             </Button>
 
             {/* Signup Guard for Officers and Admins */}

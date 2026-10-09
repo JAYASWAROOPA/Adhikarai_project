@@ -1,90 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  TextField,
-  InputAdornment
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material';
 import { adminService } from '../../services/api';
 
-const AdminAuditLogsPage = () => {
-  const [logs, setLogs] = useState([]);
-  const [search, setSearch] = useState('');
-
-  useEffect(() => {
-    async function loadLogs() {
-      const data = await adminService.getAuditLogs();
-      setLogs(data || []);
-    }
-    loadLogs();
-  }, []);
-
-  const filteredLogs = logs.filter(l =>
-    l.userName.toLowerCase().includes(search.toLowerCase()) ||
-    l.action.toLowerCase().includes(search.toLowerCase()) ||
-    l.details.toLowerCase().includes(search.toLowerCase())
-  );
-
-  return (
-    <Box sx={{ py: 2 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight="bold" color="primary.main">
-          System Audit Logs & Security Traces
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Immutable audit record of user role modifications, verification actions, and administrative updates
-        </Typography>
-      </Box>
-
-      <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Filter audit logs by action, user, or IP address..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment> }}
-        />
-      </Paper>
-
-      <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-        <Table size="small">
-          <TableHead sx={{ bgcolor: 'primary.50' }}>
-            <TableRow>
-              <TableCell fontWeight="bold">Timestamp</TableCell>
-              <TableCell fontWeight="bold">User / Role</TableCell>
-              <TableCell fontWeight="bold">Action</TableCell>
-              <TableCell fontWeight="bold">Payload / Details</TableCell>
-              <TableCell fontWeight="bold">IP Address</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredLogs.map((log) => (
-              <TableRow key={log.id}>
-                <TableCell><Typography variant="caption" fontWeight="bold">{new Date(log.timestamp).toLocaleString()}</Typography></TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="bold">{log.userName}</Typography>
-                  <Chip label={log.role} size="small" color={log.role === 'admin' ? 'error' : 'secondary'} />
-                </TableCell>
-                <TableCell><Chip label={log.action} size="small" color="primary" variant="outlined" /></TableCell>
-                <TableCell><Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{log.details}</Typography></TableCell>
-                <TableCell><Typography variant="caption">{log.ipAddress}</Typography></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
-  );
-};
-
-export default AdminAuditLogsPage;
+export default function AdminAuditLogsPage(){
+  const [logs,setLogs]=useState([]),[search,setSearch]=useState(''),[status,setStatus]=useState(''),[entityType,setEntityType]=useState(''),[startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState(''),[page,setPage]=useState(0),[total,setTotal]=useState(0),[loading,setLoading]=useState(true),[error,setError]=useState(''),[selected,setSelected]=useState(null);
+  const load=useCallback(async()=>{setLoading(true);setError('');try{const r=await adminService.getAuditLogs({search,status,entityType,startDate,endDate,page:page+1,limit:25});setLogs(r.auditLogs||[]);setTotal(r.total||0);}catch(e){setError(e.message);}finally{setLoading(false);}},[search,status,entityType,startDate,endDate,page]);
+  useEffect(()=>{const t=setTimeout(load,250);return()=>clearTimeout(t);},[load]);
+  return <Box sx={{py:2}}><Typography variant="h4" fontWeight={700} color="primary.main">Audit Logs</Typography><Typography color="text.secondary" sx={{mb:3}}>Read-only history of recorded account, system, and administrative events.</Typography>{error&&<Alert severity="error" action={<Button color="inherit" onClick={load}>Retry</Button>} sx={{mb:2}}>{error}</Alert>}
+    <Paper sx={{p:2,mb:2,display:'flex',gap:2,flexWrap:'wrap'}}><TextField size="small" label="Search actor, action, details or IP" value={search} onChange={e=>{setPage(0);setSearch(e.target.value);}} sx={{flex:1,minWidth:220}}/><TextField select size="small" label="Status" value={status} onChange={e=>{setPage(0);setStatus(e.target.value);}} sx={{minWidth:125}}><MenuItem value="">All statuses</MenuItem><MenuItem value="SUCCESS">Success</MenuItem><MenuItem value="FAILED">Failed</MenuItem><MenuItem value="BLOCKED">Blocked</MenuItem></TextField><TextField size="small" label="Entity type" value={entityType} onChange={e=>{setPage(0);setEntityType(e.target.value);}} sx={{minWidth:140}}/><TextField type="date" size="small" label="From" InputLabelProps={{shrink:true}} value={startDate} onChange={e=>{setPage(0);setStartDate(e.target.value);}}/><TextField type="date" size="small" label="To" InputLabelProps={{shrink:true}} value={endDate} onChange={e=>{setPage(0);setEndDate(e.target.value);}}/><Button onClick={load}>Refresh</Button></Paper>
+    <TableContainer component={Paper}><Table size="small"><TableHead><TableRow>{['Timestamp','Actor','Action','Entity','Status','IP address','Details'].map(x=><TableCell key={x} sx={{fontWeight:700,whiteSpace:'nowrap'}}>{x}</TableCell>)}</TableRow></TableHead><TableBody>{loading?<TableRow><TableCell colSpan={7} align="center"><CircularProgress sx={{my:3}}/></TableCell></TableRow>:logs.map(l=><TableRow key={l.id} hover><TableCell sx={{whiteSpace:'nowrap'}}>{new Date(l.timestamp).toLocaleString()}</TableCell><TableCell>{l.userName||'System'}<Typography variant="caption" display="block">{l.role} {l.userId?`· #${l.userId}`:''}</Typography></TableCell><TableCell>{l.action}</TableCell><TableCell>{l.entityType?`${l.entityType} ${l.entityId||''}`:'—'}</TableCell><TableCell><Chip size="small" label={l.status||'SUCCESS'} color={l.status==='FAILED'?'error':'success'}/></TableCell><TableCell>{l.ipAddress||'—'}</TableCell><TableCell><Button size="small" onClick={()=>setSelected(l)}>View details</Button></TableCell></TableRow>)}{!loading&&!logs.length&&<TableRow><TableCell colSpan={7} align="center">No audit events found.</TableCell></TableRow>}</TableBody></Table><TablePagination component="div" count={total} page={page} onPageChange={(_,p)=>setPage(p)} rowsPerPage={25} rowsPerPageOptions={[25]}/></TableContainer>
+    <Dialog open={Boolean(selected)} onClose={()=>setSelected(null)} fullWidth maxWidth="md"><DialogTitle>Audit event details</DialogTitle><DialogContent><Typography variant="body2" sx={{fontFamily:'monospace',whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{selected&&JSON.stringify(selected,null,2)}</Typography></DialogContent><DialogActions><Button onClick={()=>setSelected(null)}>Close</Button></DialogActions></Dialog>
+  </Box>;
+}

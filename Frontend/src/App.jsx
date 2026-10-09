@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Box } from '@mui/material';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -27,7 +27,16 @@ import AutoFillEngine from './components/autofill/AutoFillEngine';
 
 // Admin & Officer Pages
 import AdminDashboardPage from './pages/AdminDashboardPage';
-import OfficerDashboardPage from './pages/OfficerDashboardPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminOfficersPage from './pages/admin/AdminOfficersPage';
+import AdminSchemesPage from './pages/admin/AdminSchemesPage';
+import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
+import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage';
+import OfficerDashboardPage from './pages/officer/OfficerDashboardPage';
+import OfficerVerificationsPage from './pages/officer/OfficerVerificationsPage';
+import OfficerAnalyticsPage from './pages/officer/OfficerAnalyticsPage';
+import OfficerCitizenDetailPage from './pages/officer/OfficerCitizenDetailPage';
+import OfficerPortalUtilityPage, { OfficerRouteFallback } from './pages/officer/OfficerPortalUtilityPage';
 
 // Helper component for route params in AutoFillEngine
 const AutoFillRouteWrapper = () => {
@@ -65,11 +74,28 @@ function App() {
           {/* Admin Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]} />}>
             <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/officers" element={<AdminOfficersPage />} />
+            <Route path="/admin/schemes" element={<AdminSchemesPage />} />
+            <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+            <Route path="/admin/*" element={<Box sx={{ p: 4, textAlign: 'center' }}><h2>Admin page not found</h2><p>Choose a page from the admin navigation.</p></Box>} />
           </Route>
 
           {/* Officer Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={[ROLES.OFFICER, ROLES.ADMIN]} />}>
-            <Route path="/officer" element={<OfficerDashboardPage />} />
+            <Route path="/officer" element={<Navigate to="/officer/dashboard" replace />} />
+            <Route path="/officer/dashboard" element={<OfficerDashboardPage />} />
+            <Route path="/officer/pending-verification" element={<OfficerVerificationsPage />} />
+            <Route path="/officer/verifications" element={<OfficerVerificationsPage />} />
+            <Route path="/officer/applications" element={<OfficerVerificationsPage />} />
+            <Route path="/officer/analytics" element={<OfficerAnalyticsPage />} />
+            <Route path="/officer/citizens/:id" element={<OfficerCitizenDetailPage />} />
+            <Route path="/officer/schemes" element={<SchemesPage />} />
+            <Route path="/officer/profile" element={<ProfilePage />} />
+            <Route path="/officer/notifications" element={<OfficerPortalUtilityPage type="notifications" />} />
+            <Route path="/officer/settings" element={<OfficerPortalUtilityPage type="settings" />} />
+            <Route path="/officer/*" element={<OfficerRouteFallback />} />
           </Route>
 
           <Route path="*" element={<Box sx={{ p: 4, textAlign: 'center' }}><h2>404 - Page Not Found</h2></Box>} />
